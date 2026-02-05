@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>多国象棋大乱斗</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div id="start-screen">
+        <div class="menu-box">
+            <h1>多国象棋 · 逐鹿</h1>
+            <p>选择游玩人数 (5-8人)</p>
+            <div class="player-selector">
+                <input type="range" id="player-count" min="5" max="8" value="5" oninput="updateLabel()">
+                <span id="player-label">5 人局</span>
+            </div>
+            <button onclick="startGame()">开始征战</button>
+            <div class="rules-tip">
+                主公(红)位于北方，兵强马壮<br>
+                击杀敌方主帅，即可吞并其所有部队
+            </div>
+        </div>
+    </div>
+
+    <div id="game-ui" style="display: none;">
+        <div id="info-panel">
+            <div id="status">准备就绪</div>
+            <div class="controls-group">
+                <button onclick="undoMove()" class="control-btn undo-btn">悔棋</button>
+                <button onclick="location.reload()" class="restart-btn">重开</button>
+            </div>
+        </div>
+
+        <div id="board-container">
+            <div class="grid-layer" id="grid"></div>
+            <div class="hint-layer" id="hints"></div>
+            <div class="pieces-layer" id="pieces"></div>
+        </div>
+    </div>
+
+
+    <script src="game.js"></script>
+    <script>
+        function updateLabel() {
+            document.getElementById('player-label').innerText = document.getElementById('player-count').value + " 人局";
+        }
+    </script>
+</body>
+
+</html>

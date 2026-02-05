@@ -1,5 +1,5 @@
 // --- 配置常量 ---
-const BOARD_SIZE = 16;
+let BOARD_SIZE = 16;
 
 // 玩家配置 (逆时针顺序: 上 -> 左上 -> 左 -> 左下 -> 下 -> 右下 -> 右 -> 右上)
 const PLAYERS_DATA = [
@@ -18,29 +18,34 @@ let gameState = {
     currentPlayerIndex: 0,
     selectedPiece: null,
     alivePlayers: [],
-    totalPlayers: 5
+    totalPlayers: 5,
+    gameMode: 'chinese', // 'chinese' or 'western'
+    boardSize: 16
 };
 let moveHistory = [];
 
 // --- 游戏流程 ---
 function startGame() {
     const count = parseInt(document.getElementById('player-count').value);
+    const selectedCard = document.querySelector('.mode-card.selected');
+
     gameState.totalPlayers = count;
+    gameState.gameMode = selectedCard.dataset.mode;
+    gameState.boardSize = parseInt(selectedCard.dataset.board);
+    BOARD_SIZE = gameState.boardSize;
+
     document.getElementById('start-screen').style.display = 'none';
     document.getElementById('game-ui').style.display = 'flex';
     initBoard();
 }
+
 function saveState() {
-    // 深拷贝当前状态并压入栈
-    // 注意：我们要存 pieces, currentPlayerIndex, alivePlayers
     const snapshot = {
         pieces: JSON.parse(JSON.stringify(gameState.pieces)),
         currentPlayerIndex: gameState.currentPlayerIndex,
         alivePlayers: [...gameState.alivePlayers]
     };
     moveHistory.push(snapshot);
-
-    // 限制历史记录长度防止内存溢出（可选，比如保留最近50步）
     if (moveHistory.length > 50) moveHistory.shift();
 }
 
@@ -49,20 +54,12 @@ function undoMove() {
         alert("没有可以悔的棋了！");
         return;
     }
-
-    // 弹出上一步状态
     const lastState = moveHistory.pop();
-
-    // 恢复状态
     gameState.pieces = lastState.pieces;
     gameState.currentPlayerIndex = lastState.currentPlayerIndex;
     gameState.alivePlayers = lastState.alivePlayers;
-
-    // 清理界面
     gameState.selectedPiece = null;
     document.getElementById('hints').innerHTML = '';
-
-    // 重新渲染
     renderPieces();
     updateStatus();
 }
@@ -70,6 +67,8 @@ function undoMove() {
 function initBoard() {
     const grid = document.getElementById('grid');
     grid.innerHTML = '';
+    grid.className = `grid-layer grid-${BOARD_SIZE}`;
+
     for (let i = 0; i < BOARD_SIZE * BOARD_SIZE; i++) {
         const cell = document.createElement('div');
         cell.className = 'cell';
@@ -79,11 +78,9 @@ function initBoard() {
     gameState.pieces = [];
     spawnPieces();
 
-    // 激活存活玩家 (根据生成的棋子反推)
     const activeIds = new Set(gameState.pieces.map(p => p.owner));
     gameState.alivePlayers = Array.from(activeIds).sort((a, b) => a - b);
-
-    gameState.currentPlayerIndex = 0; // 主公先手
+    gameState.currentPlayerIndex = 0;
 
     renderPieces();
     updateStatus();
@@ -91,44 +88,32 @@ function initBoard() {
 
 // --- 核心布局算法 ---
 function spawnPieces() {
-    /**
-     * 定义8个槽位 (Slot)
-     * type: 'cardinal' (正向) 或 'corner' (角落)
-     * kx, ky: "将" 的绝对坐标
-     * dx, dy: 
-     * 如果是 'cardinal': dx=前进方向, dy=右侧方向
-     * 如果是 'corner': dx=X轴扩散方向(1或-1), dy=Y轴扩散方向(1或-1)
-     */
+    const size = BOARD_SIZE;
+    const mid = Math.floor(size / 2);
+
+    // 8个槽位配置
     const slots = [
         // 0. 主公 (正上) - 面向下
-        { id: 0, type: 'cardinal', kx: 7, ky: 0, dx: 0, dy: 1, rx: -1, ry: 0 },
-
-        // 1. 左上角 (0,0) - 向右下扩散
+        { id: 0, type: 'cardinal', kx: mid - 1, ky: 0, dx: 0, dy: 1, rx: -1, ry: 0 },
+        // 1. 左上角
         { id: 1, type: 'corner', kx: 0, ky: 0, dx: 1, dy: 1 },
-
         // 2. 正左 - 面向右
-        { id: 2, type: 'cardinal', kx: 0, ky: 7, dx: 1, dy: 0, rx: 0, ry: 1 },
-
-        // 3. 左下角 (0,15) - 向右上扩散
-        { id: 3, type: 'corner', kx: 0, ky: 15, dx: 1, dy: -1 },
-
+        { id: 2, type: 'cardinal', kx: 0, ky: mid - 1, dx: 1, dy: 0, rx: 0, ry: 1 },
+        // 3. 左下角
+        { id: 3, type: 'corner', kx: 0, ky: size - 1, dx: 1, dy: -1 },
         // 4. 正下 - 面向上
-        { id: 4, type: 'cardinal', kx: 8, ky: 15, dx: 0, dy: -1, rx: 1, ry: 0 },
-
-        // 5. 右下角 (15,15) - 向左上扩散
-        { id: 5, type: 'corner', kx: 15, ky: 15, dx: -1, dy: -1 },
-
+        { id: 4, type: 'cardinal', kx: mid, ky: size - 1, dx: 0, dy: -1, rx: 1, ry: 0 },
+        // 5. 右下角
+        { id: 5, type: 'corner', kx: size - 1, ky: size - 1, dx: -1, dy: -1 },
         // 6. 正右 - 面向左
-        { id: 6, type: 'cardinal', kx: 15, ky: 8, dx: -1, dy: 0, rx: 0, ry: -1 },
-
-        // 7. 右上角 (15,0) - 向左下扩散
-        { id: 7, type: 'corner', kx: 15, ky: 0, dx: -1, dy: 1 }
+        { id: 6, type: 'cardinal', kx: size - 1, ky: mid, dx: -1, dy: 0, rx: 0, ry: -1 },
+        // 7. 右上角
+        { id: 7, type: 'corner', kx: size - 1, ky: 0, dx: -1, dy: 1 }
     ];
 
-    // 根据人数选择槽位 (保持逆时针分布)
     let chosenIndices = [];
     switch (gameState.totalPlayers) {
-        case 5: chosenIndices = [0, 2, 4, 6, 7]; break; // 上, 左, 下, 右, 右上
+        case 5: chosenIndices = [0, 2, 4, 6, 7]; break;
         case 6: chosenIndices = [0, 2, 3, 4, 6, 7]; break;
         case 7: chosenIndices = [0, 1, 2, 3, 4, 6, 7]; break;
         case 8: chosenIndices = [0, 1, 2, 3, 4, 5, 6, 7]; break;
@@ -136,16 +121,15 @@ function spawnPieces() {
     }
 
     chosenIndices.forEach((slotIdx, playerIndex) => {
-        // playerIndex 是 0~7 的实际玩家ID (决定颜色和名字)
-        // slotIdx 是位置ID
         createFormation(slots[slotIdx], playerIndex);
     });
 }
 
 function createFormation(cfg, pid) {
     const isLord = PLAYERS_DATA[pid].isLord;
+    const isSmall = BOARD_SIZE === 10;
+    const isWestern = gameState.gameMode === 'western';
 
-    // 辅助：添加棋子
     const add = (type, x, y) => {
         if (x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE) {
             gameState.pieces.push({
@@ -158,38 +142,35 @@ function createFormation(cfg, pid) {
         }
     };
 
+    // 根据模式调用不同的布局函数
+    if (isWestern && isSmall) {
+        createFormationWesternSmall(cfg, add, isLord);
+    } else if (isWestern && !isSmall) {
+        createFormationWesternBig(cfg, add, isLord);
+    } else if (!isWestern && isSmall) {
+        createFormationChineseSmall(cfg, add, isLord);
+    } else {
+        createFormationChineseBig(cfg, add, isLord);
+    }
+}
+
+// ========================================
+// 中国象棋 - 大棋盘 (16×16)
+// ========================================
+function createFormationChineseBig(cfg, add, isLord) {
     if (cfg.type === 'corner') {
-        // --- 角落布局 (L型铁桶阵) ---
-        // cfg.kx, cfg.ky 是顶点 (将)
-        // cfg.dx, cfg.dy 是延伸方向 (例如左上角是 1, 1)
-
-        // 1. 将 (顶点)
+        // 角落布局 (L型)
         add('将', cfg.kx, cfg.ky);
-
-        // 2. 士 (贴身保护: 横向1格, 纵向1格)
         add('士', cfg.kx + 1 * cfg.dx, cfg.ky);
         add('士', cfg.kx, cfg.ky + 1 * cfg.dy);
-
-        // 3. 车 (外围墙壁: 横向2格, 纵向2格)
         add('车', cfg.kx + 2 * cfg.dx, cfg.ky);
         add('车', cfg.kx, cfg.ky + 2 * cfg.dy);
-
-        // 4. 马 (L型内部拐角)
         add('马', cfg.kx + 1 * cfg.dx, cfg.ky + 1 * cfg.dy);
-
-        // 5. 炮 (马的前方，构成火力点)
         add('炮', cfg.kx + 2 * cfg.dx, cfg.ky + 2 * cfg.dy);
-
     } else {
-        // --- 正向布局 (扁平阵型) ---
-        // cfg.kx, cfg.ky 是将
-        // cfg.dx, cfg.dy 是前方
-        // cfg.rx, cfg.ry 是右手边
-
+        // 正向布局
         const forward = (n) => ({ x: n * cfg.dx, y: n * cfg.dy });
         const right = (n) => ({ x: n * cfg.rx, y: n * cfg.ry });
-
-        // 放置函数: put(type, forwardSteps, rightSteps)
         const put = (t, f, r) => {
             const fVec = forward(f);
             const rVec = right(r);
@@ -197,30 +178,141 @@ function createFormation(cfg, pid) {
         };
 
         put('将', 0, 0);
-
         if (isLord) {
-            // 主公强力阵容
             put('士', 0, -1); put('士', 0, 1);
             put('马', 0, -2); put('马', 0, 2);
             put('车', 0, -3); put('车', 0, 3);
-
-            // 第二排
-            put('车', 1, 2); // 先锋车
-            put('车', 1, -2); // 先锋车
-            put('炮', 2, -2); put('炮', 2, 2); // 宽炮
-            put('士', 1, 0); // 后卫士
+            put('车', 1, 2); put('车', 1, -2);
+            put('炮', 2, -2); put('炮', 2, 2);
+            put('士', 1, 0);
         } else {
-            // 普通正向诸侯
             put('士', 0, -1); put('士', 0, 1);
             put('车', 0, -2); put('车', 0, 2);
-            // 前排
             put('马', 1, -1);
             put('炮', 1, 1);
         }
     }
 }
 
+// ========================================
+// 中国象棋 - 小棋盘 (10×10)
+// ========================================
+function createFormationChineseSmall(cfg, add, isLord) {
+    if (cfg.type === 'corner') {
+        // 角落布局 (L型) - 精简版
+        add('将', cfg.kx, cfg.ky);
+        add('车', cfg.kx + 1 * cfg.dx, cfg.ky);
+        add('车', cfg.kx, cfg.ky + 1 * cfg.dy);
+        add('马', cfg.kx + 1 * cfg.dx, cfg.ky + 1 * cfg.dy);
+    } else {
+        // 正向布局
+        const forward = (n) => ({ x: n * cfg.dx, y: n * cfg.dy });
+        const right = (n) => ({ x: n * cfg.rx, y: n * cfg.ry });
+        const put = (t, f, r) => {
+            const fVec = forward(f);
+            const rVec = right(r);
+            add(t, cfg.kx + fVec.x + rVec.x, cfg.ky + fVec.y + rVec.y);
+        };
+
+        put('将', 0, 0);
+        if (isLord) {
+            put('马', 1, 0);
+            put('车', 0, -1); put('车', 0, 1);
+            put('车', 1, -1); put('车', 1, 1);
+        } else {
+            put('马', 1, 0);
+            put('车', 0, -1); put('车', 0, 1);
+        }
+    }
+}
+
+// ========================================
+// 国际象棋 - 大棋盘 (16×16)
+// ========================================
+function createFormationWesternBig(cfg, add, isLord) {
+    if (cfg.type === 'corner') {
+        // 角落布局 (L型)
+        add('王', cfg.kx, cfg.ky);
+        add('象', cfg.kx + 1 * cfg.dx, cfg.ky);
+        add('象', cfg.kx, cfg.ky + 1 * cfg.dy);
+        add('后', cfg.kx + 2 * cfg.dx, cfg.ky);
+        add('后', cfg.kx, cfg.ky + 2 * cfg.dy);
+        add('马', cfg.kx + 1 * cfg.dx, cfg.ky + 1 * cfg.dy);
+        add('车', cfg.kx + 2 * cfg.dx, cfg.ky + 2 * cfg.dy);
+    } else {
+        // 正向布局
+        const forward = (n) => ({ x: n * cfg.dx, y: n * cfg.dy });
+        const right = (n) => ({ x: n * cfg.rx, y: n * cfg.ry });
+        const put = (t, f, r) => {
+            const fVec = forward(f);
+            const rVec = right(r);
+            add(t, cfg.kx + fVec.x + rVec.x, cfg.ky + fVec.y + rVec.y);
+        };
+
+
+        if (isLord) {
+            put('王', 0, 0); put('后', 0, 3);
+            put('象', 0, -1); put('后', 0, -3);
+            put('象', 0, 1); put('后', 1, 2);
+            put('象', 1, 0); put('后', 1, -2);
+            put('马', 0, -2); put('车', 2, -2);
+            put('马', 0, 2); put('车', 2, 2);
+        }
+        else {
+            put('王', 0, 0);
+            put('后', 0, -2); put('后', 0, 2);
+            put('象', 0, -1); put('象', 0, 1); put('象', 1, 0);
+            put('车', 1, 1);
+            put('马', 1, -1);
+        }
+    }
+}
+
+// ========================================
+// 国际象棋 - 小棋盘 (10×10)
+// ========================================
+function createFormationWesternSmall(cfg, add, isLord) {
+    if (cfg.type === 'corner') {
+        // 角落布局 (L型) - 精简版
+        add('王', cfg.kx, cfg.ky);
+        add('后', cfg.kx + 1 * cfg.dx, cfg.ky);
+        add('象', cfg.kx, cfg.ky + 1 * cfg.dy);
+        add('马', cfg.kx + 1 * cfg.dx, cfg.ky + 1 * cfg.dy);
+    } else {
+        // 正向布局
+        const forward = (n) => ({ x: n * cfg.dx, y: n * cfg.dy });
+        const right = (n) => ({ x: n * cfg.rx, y: n * cfg.ry });
+        const put = (t, f, r) => {
+            const fVec = forward(f);
+            const rVec = right(r);
+            add(t, cfg.kx + fVec.x + rVec.x, cfg.ky + fVec.y + rVec.y);
+        };
+
+        put('王', 0, 0);
+        if (isLord) {
+            put('后', 0, 1);
+            put('象', 0, -1);
+            put('马', 1, 0);
+            put('车', 1, 1);
+            put('车', 1, -1);
+        } else {
+            put('后', 0, 1);
+            put('象', 0, -1);
+            put('马', 1, 0);
+        }
+    }
+}
+
 // --- 渲染 ---
+// 国际象棋 Unicode 符号映射
+const WESTERN_PIECE_SYMBOLS = {
+    '王': '♔',
+    '后': '♕',
+    '车': '♖',
+    '象': '♗',
+    '马': '♘'
+};
+
 function renderPieces() {
     const container = document.getElementById('pieces');
     container.innerHTML = '';
@@ -233,7 +325,14 @@ function renderPieces() {
         const pData = PLAYERS_DATA[p.owner];
         el.style.color = pData.color;
         el.style.borderColor = pData.color;
-        el.innerText = p.type;
+
+        // 国际象棋用图标，中国象棋用汉字
+        if (gameState.gameMode === 'western' && WESTERN_PIECE_SYMBOLS[p.type]) {
+            el.innerText = WESTERN_PIECE_SYMBOLS[p.type];
+            el.classList.add('western-piece');
+        } else {
+            el.innerText = p.type;
+        }
 
         if (pData.isLord) {
             el.classList.add('lord');
@@ -276,8 +375,6 @@ function showHints(piece) {
 
 function tryMove(p, x, y) {
     if (!canMove(p, x, y)) return;
-
-    // --- 关键点：在修改数据前先保存状态 ---
     saveState();
 
     const target = getPieceAt(x, y);
@@ -285,7 +382,8 @@ function tryMove(p, x, y) {
 
     if (target) {
         gameState.pieces = gameState.pieces.filter(item => item !== target);
-        if (target.type === '将') {
+        const kingTypes = ['将', '王'];
+        if (kingTypes.includes(target.type)) {
             inheritTroops(p.owner, target.owner);
         }
     }
@@ -302,10 +400,7 @@ function tryMove(p, x, y) {
     nextTurn();
 }
 
-// ==========================================
-// 3. 更新：规则判断 (加入马的蹩脚检测)
-// ==========================================
-
+// --- 规则判断 ---
 function canMove(p, tx, ty) {
     if (p.x === tx && p.y === ty) return false;
     const target = getPieceAt(tx, ty);
@@ -316,6 +411,16 @@ function canMove(p, tx, ty) {
     const absDx = Math.abs(dx);
     const absDy = Math.abs(dy);
 
+    // 根据游戏模式选择规则
+    if (gameState.gameMode === 'western') {
+        return canMoveWestern(p, tx, ty, dx, dy, absDx, absDy, target);
+    } else {
+        return canMoveChinese(p, tx, ty, dx, dy, absDx, absDy, target);
+    }
+}
+
+// 中国象棋规则
+function canMoveChinese(p, tx, ty, dx, dy, absDx, absDy, target) {
     switch (p.type) {
         case '将': return (absDx + absDy === 1);
         case '士': return (absDx === 1 && absDy === 1);
@@ -327,53 +432,99 @@ function canMove(p, tx, ty) {
             const obs = countObstacles(p.x, p.y, tx, ty);
             if (!target) return obs === 0;
             else return obs === 1;
-
         case '马':
-            // --- 超级马：蹩脚检测 + 无限延伸 ---
-            const horseDirs = [
-                { x: 1, y: 2 }, { x: 1, y: -2 },
-                { x: -1, y: 2 }, { x: -1, y: -2 },
-                { x: 2, y: 1 }, { x: 2, y: -1 },
-                { x: -2, y: 1 }, { x: -2, y: -1 }
-            ];
+            return canMoveHorseChinese(p, tx, ty);
+    }
+    return false;
+}
 
-            for (let dir of horseDirs) {
-                // 1. 蹩脚检测 (New!)
-                // 规则：马走日，先直走一格，再斜走一格。
-                // 蹩脚点在于“直走那一格”。
-                // 如果是纵向日(1,2)，蹩脚点在(0,1)
-                // 如果是横向日(2,1)，蹩脚点在(1,0)
+// 中国象棋马的移动（带蹩脚+延伸）
+function canMoveHorseChinese(p, tx, ty) {
+    const horseDirs = [
+        { x: 1, y: 2 }, { x: 1, y: -2 },
+        { x: -1, y: 2 }, { x: -1, y: -2 },
+        { x: 2, y: 1 }, { x: 2, y: -1 },
+        { x: -2, y: 1 }, { x: -2, y: -1 }
+    ];
 
-                let legX = p.x;
-                let legY = p.y;
+    for (let dir of horseDirs) {
+        let legX = p.x;
+        let legY = p.y;
 
-                if (Math.abs(dir.x) === 2) {
-                    legX += Math.sign(dir.x); // 横向蹩马腿位置
-                } else {
-                    legY += Math.sign(dir.y); // 纵向蹩马腿位置
-                }
+        if (Math.abs(dir.x) === 2) {
+            legX += Math.sign(dir.x);
+        } else {
+            legY += Math.sign(dir.y);
+        }
 
-                // 如果马腿处有子，这个方向直接废掉，不能跳跃也不能延伸
-                if (getPieceAt(legX, legY)) continue;
+        if (getPieceAt(legX, legY)) continue;
 
-                // 2. 射线延伸检测 (同之前的逻辑)
-                let step = 1;
-                while (step <= 3) {
-                    const checkX = p.x + dir.x * step;
-                    const checkY = p.y + dir.y * step;
+        const maxStep = BOARD_SIZE === 16 ? 3 : 2;
+        let step = 1;
+        while (step <= maxStep) {
+            const checkX = p.x + dir.x * step;
+            const checkY = p.y + dir.y * step;
 
-                    if (checkX < 0 || checkX >= BOARD_SIZE || checkY < 0 || checkY >= BOARD_SIZE) break;
+            if (checkX < 0 || checkX >= BOARD_SIZE || checkY < 0 || checkY >= BOARD_SIZE) break;
+            if (checkX === tx && checkY === ty) return true;
+            if (getPieceAt(checkX, checkY)) break;
 
-                    // 发现目标在射线上
-                    if (checkX === tx && checkY === ty) return true;
+            step++;
+        }
+    }
+    return false;
+}
 
-                    // 路径阻挡：虽然没蹩马腿，但滑行路上有别人挡着，也不能穿过去
-                    if (getPieceAt(checkX, checkY)) break;
-
-                    step++;
-                }
+// 国际象棋规则
+function canMoveWestern(p, tx, ty, dx, dy, absDx, absDy, target) {
+    switch (p.type) {
+        case '王':
+            return (absDx <= 1 && absDy <= 1);
+        case '后':
+            // 横竖斜都行
+            if (dx === 0 || dy === 0) {
+                return countObstacles(p.x, p.y, tx, ty) === 0;
+            }
+            if (absDx === absDy) {
+                return countDiagonalObstacles(p.x, p.y, tx, ty) === 0;
             }
             return false;
+        case '车':
+            if (dx !== 0 && dy !== 0) return false;
+            return countObstacles(p.x, p.y, tx, ty) === 0;
+        case '象':
+            if (absDx !== absDy) return false;
+            return countDiagonalObstacles(p.x, p.y, tx, ty) === 0;
+        case '马':
+            // 国际象棋马：日字延伸，不蹩脚
+            return canMoveHorseWestern(p, tx, ty);
+    }
+    return false;
+}
+
+// 国际象棋马的移动（无蹩脚+延伸）
+function canMoveHorseWestern(p, tx, ty) {
+    const horseDirs = [
+        { x: 1, y: 2 }, { x: 1, y: -2 },
+        { x: -1, y: 2 }, { x: -1, y: -2 },
+        { x: 2, y: 1 }, { x: 2, y: -1 },
+        { x: -2, y: 1 }, { x: -2, y: -1 }
+    ];
+
+    const maxStep = BOARD_SIZE === 16 ? 3 : 2;
+
+    for (let dir of horseDirs) {
+        let step = 1;
+        while (step <= maxStep) {
+            const checkX = p.x + dir.x * step;
+            const checkY = p.y + dir.y * step;
+
+            if (checkX < 0 || checkX >= BOARD_SIZE || checkY < 0 || checkY >= BOARD_SIZE) break;
+            if (checkX === tx && checkY === ty) return true;
+            if (getPieceAt(checkX, checkY)) break;
+
+            step++;
+        }
     }
     return false;
 }
@@ -392,10 +543,23 @@ function countObstacles(x1, y1, x2, y2) {
     return count;
 }
 
+function countDiagonalObstacles(x1, y1, x2, y2) {
+    let count = 0;
+    const xDir = Math.sign(x2 - x1);
+    const yDir = Math.sign(y2 - y1);
+    let cx = x1 + xDir;
+    let cy = y1 + yDir;
+    while (cx !== x2 || cy !== y2) {
+        if (getPieceAt(cx, cy)) count++;
+        cx += xDir;
+        cy += yDir;
+    }
+    return count;
+}
+
 function getPieceAt(x, y) {
     return gameState.pieces.find(p => p.x === x && p.y === y);
 }
-
 
 function inheritTroops(killerId, victimId) {
     const killer = PLAYERS_DATA[killerId];
@@ -409,14 +573,9 @@ function inheritTroops(killerId, victimId) {
         }
     });
 
-    // 关键修正：为了防止行动顺序错乱
-    // 我们需要先找到 victim 在 alivePlayers 里的索引
     const victimIndex = gameState.alivePlayers.indexOf(victimId);
-
-    // 从存活列表移除
     gameState.alivePlayers = gameState.alivePlayers.filter(id => id !== victimId);
 
-    // 如果被杀的人排在当前行动者之前，当前行动者索引需要减1，否则下一个人会被跳过
     if (victimIndex < gameState.currentPlayerIndex) {
         gameState.currentPlayerIndex--;
     }
@@ -437,7 +596,5 @@ function updateStatus() {
     const pData = PLAYERS_DATA[pid];
     const statusDiv = document.getElementById('status');
     statusDiv.innerHTML = `当前回合: <span style="color:${pData.color}">${pData.name}</span>`;
-
-    // 视觉提示边框
-    document.getElementById('board-container').style.border = `2px solid ${pData.color}`;
+    document.getElementById('board-container').style.borderColor = pData.color;
 }

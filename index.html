@@ -12,23 +12,67 @@
 
     <div id="start-screen">
         <div class="menu-box">
-            <h1>多国象棋 · 逐鹿</h1>
-            <p>选择游玩人数 (5-8人)</p>
-            <div class="player-selector">
-                <input type="range" id="player-count" min="5" max="8" value="5" oninput="updateLabel()">
-                <span id="player-label">5 人局</span>
+            <!-- 标题区 -->
+            <div class="menu-header">
+                <h1>🏯 多国象棋 · 逐鹿</h1>
+                <p class="subtitle">天下逐鹿，谁主沉浮</p>
             </div>
-            <button onclick="startGame()">开始征战</button>
-            <div class="rules-tip">
-                主公(红)位于北方，兵强马壮<br>
-                击杀敌方主帅，即可吞并其所有部队
+
+            <!-- 模式选择 -->
+            <div class="menu-section">
+                <label class="section-label">选择模式</label>
+                <div class="mode-cards">
+                    <div class="mode-card selected" data-mode="chinese" data-board="16">
+                        <div class="mode-icon">🐉</div>
+                        <div class="mode-name">中国象棋</div>
+                        <div class="mode-desc">16×16 大棋盘</div>
+                    </div>
+                    <div class="mode-card" data-mode="chinese" data-board="10">
+                        <div class="mode-icon">🀄</div>
+                        <div class="mode-name">中国象棋</div>
+                        <div class="mode-desc">10×10 小棋盘</div>
+                    </div>
+                    <div class="mode-card" data-mode="western" data-board="16">
+                        <div class="mode-icon">♛</div>
+                        <div class="mode-name">国际象棋</div>
+                        <div class="mode-desc">16×16 大棋盘</div>
+                    </div>
+                    <div class="mode-card" data-mode="western" data-board="10">
+                        <div class="mode-icon">♞</div>
+                        <div class="mode-name">国际象棋</div>
+                        <div class="mode-desc">10×10 小棋盘</div>
+                    </div>
+                </div>
             </div>
+
+            <!-- 人数选择 -->
+            <div class="menu-section">
+                <label class="section-label">玩家人数</label>
+                <div class="player-selector">
+                    <input type="range" id="player-count" min="5" max="8" value="5" oninput="updateLabel()">
+                    <span id="player-label">5 人局</span>
+                </div>
+            </div>
+
+            <!-- 开始按钮 -->
+            <button class="start-btn" onclick="startGame()">⚔️ 开始征战</button>
+
+            <!-- 规则提示 -->
+            <details class="rules-section">
+                <summary>📜 游戏规则</summary>
+                <div class="rules-content">
+                    <p>• 主公(红)位于北方，兵强马壮</p>
+                    <p>• 击杀敌方主帅，即可吞并其所有部队</p>
+                    <p>• 最后存活的玩家获胜</p>
+                </div>
+            </details>
         </div>
     </div>
 
     <div id="game-ui" style="display: none;">
         <div id="info-panel">
             <div id="status">准备就绪</div>
+            <div id="timer" style="display: none;"></div>
             <div class="controls-group">
                 <button onclick="undoMove()" class="control-btn undo-btn">悔棋</button>
                 <button onclick="location.reload()" class="restart-btn">重开</button>
@@ -48,6 +92,14 @@
         function updateLabel() {
             document.getElementById('player-label').innerText = document.getElementById('player-count').value + " 人局";
         }
+
+        // 模式卡片选择
+        document.querySelectorAll('.mode-card').forEach(card => {
+            card.addEventListener('click', () => {
+                document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+            });
+        });
     </script>
 </body>
 

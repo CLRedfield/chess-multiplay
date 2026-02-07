@@ -242,6 +242,120 @@ input[type=range] {
     margin: 5px 0;
 }
 
+/* === Identity Cards === */
+.identity-hint {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    font-weight: normal;
+}
+
+.draw-btn {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 1rem;
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+.draw-btn:hover {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+}
+
+.draw-btn:active {
+    transform: translateY(1px);
+}
+
+.identity-cards-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    min-height: 20px;
+}
+
+.identity-card {
+    width: 70px;
+    height: 100px;
+    position: relative;
+    perspective: 600px;
+    cursor: pointer;
+}
+
+.card-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+    backface-visibility: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    transition: transform 0.5s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.card-back {
+    background: linear-gradient(135deg, #1e3a5f, #2d5a87);
+    border: 2px solid #3b82f6;
+    transform: rotateY(0deg);
+}
+
+.card-back .card-pattern {
+    font-size: 2rem;
+    opacity: 0.9;
+}
+
+.card-back .card-number {
+    position: absolute;
+    bottom: 6px;
+    right: 8px;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 600;
+}
+
+.card-front {
+    border: 2px solid;
+    transform: rotateY(180deg);
+}
+
+.card-front .card-icon {
+    font-size: 1.8rem;
+    margin-bottom: 4px;
+}
+
+.card-front .card-identity {
+    font-size: 0.95rem;
+    font-weight: bold;
+}
+
+.identity-card.flipped .card-back {
+    transform: rotateY(-180deg);
+}
+
+.identity-card.flipped .card-front {
+    transform: rotateY(0deg);
+}
+
+.identity-card:hover {
+    transform: translateY(-4px);
+}
+
+.identity-card:hover .card-face {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
 /* === Game Interface === */
 #game-ui {
     display: flex;

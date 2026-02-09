@@ -504,6 +504,11 @@
             const roomData = RoomManager.getCurrentRoom();
             const playerCount = Object.keys(roomData.players || {}).length;
 
+            if (playerCount < 5) {
+                alert("人数不足，至少需要5人才能开始游戏！");
+                return;
+            }
+
             // 生成身份
             const config = IDENTITY_CONFIG[playerCount];
             const identities = [];

@@ -232,7 +232,15 @@ const RoomManager = (function () {
 
         const unsub = roomRef.on('value', (snapshot) => {
             if (snapshot.exists()) {
-                callback(snapshot.val());
+                const val = snapshot.val();
+                // 更新内部状态
+                if (currentRoom) {
+                    currentRoom = {
+                        ...currentRoom,
+                        ...val
+                    };
+                }
+                callback(val);
             } else {
                 callback(null);
             }

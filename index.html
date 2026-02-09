@@ -6,11 +6,131 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>多国象棋大乱斗</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
 
 <body>
 
-    <div id="start-screen">
+    <!-- 主菜单 -->
+    <div id="main-menu">
+        <div class="menu-box main-menu-box">
+            <div class="menu-header">
+                <h1>🏯 多国象棋 · 逐鹿</h1>
+                <p class="subtitle">天下逐鹿，谁主沉浮</p>
+            </div>
+            <div class="main-menu-buttons">
+                <button class="menu-btn local-btn" onclick="showLocalMode()">
+                    <span class="btn-icon">🎮</span>
+                    <span class="btn-text">本地游戏</span>
+                    <span class="btn-desc">同屏多人对战</span>
+                </button>
+                <button class="menu-btn online-btn" onclick="showOnlineLobby()">
+                    <span class="btn-icon">🌐</span>
+                    <span class="btn-text">在线游戏</span>
+                    <span class="btn-desc">联网多人对战</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 在线大厅 -->
+    <div id="online-lobby" style="display: none;">
+        <div class="menu-box lobby-box">
+            <div class="menu-header">
+                <h1>🌐 在线对战</h1>
+                <p class="subtitle">创建或加入房间</p>
+            </div>
+
+            <div class="menu-section">
+                <label class="section-label">你的昵称</label>
+                <input type="text" id="username-input" class="text-input" placeholder="输入昵称..." maxlength="12">
+            </div>
+
+            <div class="lobby-actions">
+                <div class="lobby-panel create-panel">
+                    <h3>创建房间</h3>
+                    <div class="mode-cards-mini">
+                        <div class="mode-card-mini selected" data-mode="chinese" data-board="16">
+                            <span>🐉</span> 中国16×16
+                        </div>
+                        <div class="mode-card-mini" data-mode="chinese" data-board="10">
+                            <span>🀄</span> 中国10×10
+                        </div>
+                        <div class="mode-card-mini" data-mode="western" data-board="16">
+                            <span>♛</span> 国际16×16
+                        </div>
+                        <div class="mode-card-mini" data-mode="western" data-board="10">
+                            <span>♞</span> 国际10×10
+                        </div>
+                    </div>
+                    <button class="action-btn create-btn" onclick="createOnlineRoom()">🏠 创建房间</button>
+                </div>
+
+                <div class="lobby-divider">
+                    <span>或</span>
+                </div>
+
+                <div class="lobby-panel join-panel">
+                    <h3>加入房间</h3>
+                    <input type="text" id="room-code-input" class="text-input room-code" placeholder="输入房间号"
+                        maxlength="6">
+                    <button class="action-btn join-btn" onclick="joinOnlineRoom()">🚀 加入房间</button>
+                </div>
+            </div>
+
+            <button class="back-btn" onclick="showMainMenu()">← 返回主菜单</button>
+        </div>
+    </div>
+
+    <!-- 等待房间 -->
+    <div id="waiting-room" style="display: none;">
+        <div class="menu-box waiting-box">
+            <div class="room-header">
+                <div class="room-info">
+                    <div class="room-code-display">
+                        <span class="label">房间号</span>
+                        <span class="code" id="display-room-code">------</span>
+                        <button class="copy-btn" onclick="copyRoomCode()">📋</button>
+                    </div>
+                    <div class="room-mode" id="display-room-mode">中国象棋 16×16</div>
+                </div>
+            </div>
+
+            <div class="players-section">
+                <div class="players-header">
+                    <span>玩家列表</span>
+                    <span class="player-count" id="player-count-display">0/5-8</span>
+                </div>
+                <div class="players-list" id="players-list">
+                    <!-- 动态填充 -->
+                </div>
+            </div>
+
+            <!-- 身份牌区域（仅游戏开始后显示） -->
+            <div class="my-identity-section" id="my-identity-section" style="display: none;">
+                <label class="section-label">我的身份</label>
+                <div class="my-identity-card" id="my-identity-card">
+                    <div class="identity-icon">?</div>
+                    <div class="identity-name">点击查看</div>
+                </div>
+            </div>
+
+            <div class="waiting-actions">
+                <button class="action-btn start-game-btn" id="start-game-btn" onclick="startOnlineGame()"
+                    style="display: none;">
+                    ⚔️ 开始游戏
+                </button>
+                <div class="waiting-hint" id="waiting-hint">等待房主开始游戏...</div>
+            </div>
+
+            <button class="back-btn danger" onclick="leaveOnlineRoom()">🚪 离开房间</button>
+        </div>
+    </div>
+
+    <!-- 本地游戏设置（原start-screen） -->
+    <div id="start-screen" style="display: none;">
         <div class="menu-box">
             <!-- 标题区 -->
             <div class="menu-header">
@@ -73,6 +193,8 @@
                     <p>• 最后存活的玩家获胜</p>
                 </div>
             </details>
+
+            <button class="back-btn" onclick="showMainMenu()">← 返回主菜单</button>
         </div>
     </div>
 
@@ -81,8 +203,8 @@
             <div id="status">准备就绪</div>
             <div id="timer" style="display: none;"></div>
             <div class="controls-group">
-                <button onclick="undoMove()" class="control-btn undo-btn">悔棋</button>
-                <button onclick="location.reload()" class="restart-btn">重开</button>
+                <button onclick="undoMove()" class="control-btn undo-btn" id="undo-btn">悔棋</button>
+                <button onclick="exitGame()" class="restart-btn">退出</button>
             </div>
         </div>
 
@@ -93,13 +215,43 @@
         </div>
     </div>
 
-
+    <script src="firebase-config.js"></script>
+    <script src="room-manager.js"></script>
     <script src="game.js"></script>
     <script>
+        // === 界面切换 ===
+        function showMainMenu() {
+            hideAllScreens();
+            document.getElementById('main-menu').style.display = 'flex';
+        }
+
+        function showLocalMode() {
+            hideAllScreens();
+            document.getElementById('start-screen').style.display = 'flex';
+        }
+
+        function showOnlineLobby() {
+            hideAllScreens();
+            document.getElementById('online-lobby').style.display = 'flex';
+        }
+
+        function showWaitingRoom() {
+            hideAllScreens();
+            document.getElementById('waiting-room').style.display = 'flex';
+        }
+
+        function hideAllScreens() {
+            document.getElementById('main-menu').style.display = 'none';
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('online-lobby').style.display = 'none';
+            document.getElementById('waiting-room').style.display = 'none';
+            document.getElementById('game-ui').style.display = 'none';
+        }
+
+        // === 本地模式 ===
         function updateLabel() {
             const count = document.getElementById('player-count').value;
             document.getElementById('player-label').innerText = count + " 人局";
-            // 清空已抽取的身份牌
             document.getElementById('identity-cards').innerHTML = '';
         }
 
@@ -107,6 +259,14 @@
         document.querySelectorAll('.mode-card').forEach(card => {
             card.addEventListener('click', () => {
                 document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+            });
+        });
+
+        // 在线大厅模式卡片
+        document.querySelectorAll('.mode-card-mini').forEach(card => {
+            card.addEventListener('click', () => {
+                document.querySelectorAll('.mode-card-mini').forEach(c => c.classList.remove('selected'));
                 card.classList.add('selected');
             });
         });
@@ -134,7 +294,6 @@
             const count = parseInt(document.getElementById('player-count').value);
             const config = IDENTITY_CONFIG[count];
 
-            // 生成身份数组
             currentIdentities = [];
             for (const [identity, num] of Object.entries(config)) {
                 for (let i = 0; i < num; i++) {
@@ -148,7 +307,6 @@
                 [currentIdentities[i], currentIdentities[j]] = [currentIdentities[j], currentIdentities[i]];
             }
 
-            // 渲染卡牌
             renderIdentityCards();
         }
 
@@ -162,7 +320,6 @@
                 card.dataset.index = index;
                 card.dataset.identity = identity;
 
-                // 卡牌背面
                 const cardBack = document.createElement('div');
                 cardBack.className = 'card-face card-back';
                 cardBack.innerHTML = `
@@ -170,7 +327,6 @@
                     <div class="card-number">${index + 1}</div>
                 `;
 
-                // 卡牌正面
                 const style = IDENTITY_STYLES[identity];
                 const cardFront = document.createElement('div');
                 cardFront.className = 'card-face card-front';
@@ -194,12 +350,10 @@
         }
 
         function flipCard(card) {
-            // 如果已有翻开的卡牌且不是当前卡牌，先翻回去
             if (currentFlippedCard && currentFlippedCard !== card) {
                 currentFlippedCard.classList.remove('flipped');
             }
 
-            // 切换当前卡牌状态
             if (card.classList.contains('flipped')) {
                 card.classList.remove('flipped');
                 currentFlippedCard = null;
@@ -209,13 +363,212 @@
             }
         }
 
-        // 点击其他地方翻回卡牌
         document.addEventListener('click', (e) => {
             if (currentFlippedCard && !e.target.closest('.identity-card')) {
                 currentFlippedCard.classList.remove('flipped');
                 currentFlippedCard = null;
             }
         });
+
+        // === 在线模式 ===
+        let isInOnlineRoom = false;
+
+        async function createOnlineRoom() {
+            const username = document.getElementById('username-input').value.trim();
+            if (!username) {
+                alert('请输入昵称！');
+                return;
+            }
+
+            const selectedCard = document.querySelector('.mode-card-mini.selected');
+            const config = {
+                mode: selectedCard.dataset.mode,
+                boardSize: parseInt(selectedCard.dataset.board)
+            };
+
+            try {
+                const roomCode = await RoomManager.createRoom(username, config);
+                isInOnlineRoom = true;
+                showWaitingRoom();
+                updateWaitingRoomUI(roomCode, config);
+                setupRoomListeners();
+            } catch (error) {
+                alert('创建房间失败: ' + error.message);
+            }
+        }
+
+        async function joinOnlineRoom() {
+            const username = document.getElementById('username-input').value.trim();
+            const roomCode = document.getElementById('room-code-input').value.trim().toUpperCase();
+
+            if (!username) {
+                alert('请输入昵称！');
+                return;
+            }
+            if (!roomCode || roomCode.length !== 6) {
+                alert('请输入6位房间号！');
+                return;
+            }
+
+            try {
+                const roomData = await RoomManager.joinRoom(roomCode, username);
+                isInOnlineRoom = true;
+                showWaitingRoom();
+                updateWaitingRoomUI(roomCode, roomData.config);
+                setupRoomListeners();
+            } catch (error) {
+                alert('加入房间失败: ' + error.message);
+            }
+        }
+
+        async function leaveOnlineRoom() {
+            if (confirm('确定要离开房间吗？')) {
+                await RoomManager.leaveRoom();
+                isInOnlineRoom = false;
+                showMainMenu();
+            }
+        }
+
+        function updateWaitingRoomUI(roomCode, config) {
+            document.getElementById('display-room-code').textContent = roomCode;
+
+            const modeText = config.mode === 'chinese' ? '中国象棋' : '国际象棋';
+            document.getElementById('display-room-mode').textContent = `${modeText} ${config.boardSize}×${config.boardSize}`;
+        }
+
+        function setupRoomListeners() {
+            RoomManager.onRoomChange((roomData) => {
+                if (!roomData) {
+                    // 房间被删除
+                    alert('房间已关闭');
+                    isInOnlineRoom = false;
+                    showMainMenu();
+                    return;
+                }
+
+                updatePlayersList(roomData);
+
+                // 检查游戏是否开始
+                if (roomData.status === 'playing') {
+                    startOnlineGamePlay(roomData);
+                }
+            });
+        }
+
+        function updatePlayersList(roomData) {
+            const container = document.getElementById('players-list');
+            const players = roomData.players || {};
+            const playerOrder = roomData.playerOrder || Object.keys(players);
+            const host = roomData.host;
+            const currentUser = RoomManager.getCurrentUser();
+
+            container.innerHTML = '';
+            let count = 0;
+
+            playerOrder.forEach((playerId, index) => {
+                const player = players[playerId];
+                if (!player) return;
+
+                count++;
+                const isHost = playerId === host;
+                const isMe = currentUser && playerId === currentUser.id;
+
+                const div = document.createElement('div');
+                div.className = 'player-item' + (isMe ? ' me' : '');
+                div.innerHTML = `
+                    <span class="player-index">${index + 1}</span>
+                    <span class="player-name">${player.name}${isMe ? ' (我)' : ''}</span>
+                    ${isHost ? '<span class="host-badge">👑 房主</span>' : ''}
+                `;
+                container.appendChild(div);
+            });
+
+            document.getElementById('player-count-display').textContent = `${count}/5-8`;
+
+            // 显示/隐藏开始按钮
+            const startBtn = document.getElementById('start-game-btn');
+            const hint = document.getElementById('waiting-hint');
+
+            if (currentUser && currentUser.isHost) {
+                startBtn.style.display = 'block';
+                hint.style.display = 'none';
+                startBtn.disabled = count < 5;
+                startBtn.textContent = count < 5 ? `⚔️ 需要至少5人 (${count}/5)` : '⚔️ 开始游戏';
+            } else {
+                startBtn.style.display = 'none';
+                hint.style.display = 'block';
+            }
+        }
+
+        async function startOnlineGame() {
+            const roomData = RoomManager.getCurrentRoom();
+            const playerCount = Object.keys(roomData.players || {}).length;
+
+            // 生成身份
+            const config = IDENTITY_CONFIG[playerCount];
+            const identities = [];
+            for (const [identity, num] of Object.entries(config)) {
+                for (let i = 0; i < num; i++) {
+                    identities.push(identity);
+                }
+            }
+
+            try {
+                await RoomManager.startGame(identities);
+            } catch (error) {
+                alert('开始游戏失败: ' + error.message);
+            }
+        }
+
+        async function startOnlineGamePlay(roomData) {
+            // 显示我的身份
+            const myIdentity = await RoomManager.getMyIdentity();
+            if (myIdentity) {
+                document.getElementById('my-identity-section').style.display = 'block';
+                const style = IDENTITY_STYLES[myIdentity];
+                const card = document.getElementById('my-identity-card');
+                card.innerHTML = `
+                    <div class="identity-icon">${style.icon}</div>
+                    <div class="identity-name" style="color: ${style.color}">${myIdentity}</div>
+                `;
+                card.style.backgroundColor = style.bg;
+                card.style.borderColor = style.border;
+            }
+
+            // 切换到游戏界面
+            setTimeout(() => {
+                hideAllScreens();
+                document.getElementById('game-ui').style.display = 'flex';
+
+                // 初始化在线游戏
+                const playerOrder = roomData.playerOrder || [];
+                const currentUser = RoomManager.getCurrentUser();
+                const myIndex = playerOrder.indexOf(currentUser.id);
+
+                initOnlineGame(roomData.config, playerOrder.length, myIndex, playerOrder);
+            }, 2000);
+        }
+
+        function copyRoomCode() {
+            const code = document.getElementById('display-room-code').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                alert('房间号已复制！');
+            });
+        }
+
+        function exitGame() {
+            if (gameState.isOnline) {
+                if (confirm('确定要退出游戏吗？')) {
+                    RoomManager.leaveRoom();
+                    isInOnlineRoom = false;
+                    showMainMenu();
+                }
+            } else {
+                if (confirm('确定要退出游戏吗？')) {
+                    showMainMenu();
+                }
+            }
+        }
     </script>
 </body>
 

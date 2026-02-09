@@ -603,3 +603,476 @@ input[type=range] {
         font-size: 0.9rem;
     }
 }
+
+/* === 主菜单 === */
+#main-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.main-menu-box {
+    max-width: 450px;
+}
+
+.main-menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.menu-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 20px;
+    border: none;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.menu-btn .btn-icon {
+    font-size: 2.5rem;
+    margin-bottom: 8px;
+}
+
+.menu-btn .btn-text {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.menu-btn .btn-desc {
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.local-btn {
+    background: linear-gradient(135deg, #11998e, #38ef7d);
+    color: white;
+    box-shadow: 0 8px 25px rgba(17, 153, 142, 0.4);
+}
+
+.local-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(17, 153, 142, 0.5);
+}
+
+.online-btn {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+.online-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(102, 126, 234, 0.5);
+}
+
+/* === 在线大厅 === */
+#online-lobby {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    overflow: auto;
+}
+
+.lobby-box {
+    max-width: 600px;
+}
+
+.text-input {
+    width: 100%;
+    padding: 14px 18px;
+    font-size: 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-family: inherit;
+    transition: all 0.2s;
+    background: #f8fafc;
+}
+
+.text-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    background: white;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.text-input.room-code {
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    font-weight: 600;
+    text-align: center;
+    font-size: 1.2rem;
+}
+
+.lobby-actions {
+    display: flex;
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.lobby-panel {
+    flex: 1;
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+}
+
+.lobby-panel h3 {
+    margin: 0 0 16px 0;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+}
+
+.lobby-divider {
+    display: flex;
+    align-items: center;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.mode-cards-mini {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.mode-card-mini {
+    padding: 10px 8px;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.mode-card-mini:hover {
+    border-color: var(--primary-color);
+}
+
+.mode-card-mini.selected {
+    border-color: var(--primary-color);
+    background: rgba(37, 99, 235, 0.05);
+}
+
+.mode-card-mini span {
+    margin-right: 4px;
+}
+
+.action-btn {
+    width: 100%;
+    padding: 14px 20px;
+    font-size: 1rem;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.create-btn {
+    background: linear-gradient(135deg, #11998e, #38ef7d);
+    color: white;
+}
+
+.join-btn {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    margin-top: 12px;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.05);
+}
+
+.action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.back-btn {
+    width: 100%;
+    padding: 12px 20px;
+    font-size: 0.95rem;
+    background: transparent;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+    margin-top: 15px;
+}
+
+.back-btn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.back-btn.danger {
+    border-color: #fecaca;
+    color: #dc2626;
+}
+
+.back-btn.danger:hover {
+    background: #fef2f2;
+}
+
+/* === 等待房间 === */
+#waiting-room {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    overflow: auto;
+}
+
+.waiting-box {
+    max-width: 500px;
+}
+
+.room-header {
+    margin-bottom: 24px;
+}
+
+.room-info {
+    background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+}
+
+.room-code-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.room-code-display .label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.room-code-display .code {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: var(--primary-color);
+    font-family: 'Consolas', monospace;
+}
+
+.copy-btn {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s;
+}
+
+.copy-btn:hover {
+    background: #f8fafc;
+    transform: scale(1.05);
+}
+
+.room-mode {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+}
+
+.players-section {
+    margin-bottom: 24px;
+}
+
+.players-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.player-count {
+    color: var(--primary-color);
+    font-size: 0.9rem;
+}
+
+.players-list {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.player-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: white;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    transition: all 0.2s;
+}
+
+.player-item:last-child {
+    margin-bottom: 0;
+}
+
+.player-item.me {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(37, 99, 235, 0.05));
+    border: 1px solid rgba(37, 99, 235, 0.2);
+}
+
+.player-index {
+    width: 28px;
+    height: 28px;
+    background: #e2e8f0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.player-name {
+    flex: 1;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.host-badge {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    background: #fef3c7;
+    color: #b45309;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+.start-game-btn {
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    font-size: 1.15rem;
+    padding: 16px 24px;
+}
+
+.waiting-hint {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    padding: 16px;
+}
+
+.waiting-actions {
+    margin-bottom: 16px;
+}
+
+/* === 我的身份卡 === */
+.my-identity-section {
+    margin-bottom: 20px;
+}
+
+.my-identity-card {
+    background: white;
+    border: 3px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.my-identity-card:hover {
+    transform: scale(1.02);
+}
+
+.my-identity-card .identity-icon {
+    font-size: 2.5rem;
+    margin-bottom: 8px;
+}
+
+.my-identity-card .identity-name {
+    font-size: 1.3rem;
+    font-weight: 700;
+}
+
+/* === 回合状态 === */
+.my-turn {
+    color: #059669;
+    font-weight: 600;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.waiting-turn {
+    color: #9ca3af;
+    font-size: 0.9rem;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+}
+
+/* === 响应式 === */
+@media (max-width: 600px) {
+    .lobby-actions {
+        flex-direction: column;
+    }
+
+    .lobby-divider {
+        justify-content: center;
+        padding: 10px 0;
+    }
+
+    .room-code-display .code {
+        font-size: 1.5rem;
+        letter-spacing: 2px;
+    }
+}

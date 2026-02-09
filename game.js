@@ -20,7 +20,11 @@ let gameState = {
     alivePlayers: [],
     totalPlayers: 5,
     gameMode: 'chinese', // 'chinese' or 'western'
-    boardSize: 16
+    boardSize: 16,
+    // 在线模式新增
+    isOnline: false,
+    myPlayerIndex: null, // 我在alivePlayers中的索引位置
+    playerOrder: null    // 在线模式玩家ID顺序
 };
 let moveHistory = [];
 
@@ -32,14 +36,60 @@ function startGame() {
     gameState.totalPlayers = count;
     gameState.gameMode = selectedCard.dataset.mode;
     gameState.boardSize = parseInt(selectedCard.dataset.board);
+    gameState.isOnline = false;
     BOARD_SIZE = gameState.boardSize;
 
     document.getElementById('start-screen').style.display = 'none';
     document.getElementById('game-ui').style.display = 'flex';
+
+    // 本地模式显示悔棋按钮
+    document.getElementById('undo-btn').style.display = 'inline-block';
+
     initBoard();
 }
 
+// 在线模式初始化
+function initOnlineGame(config, playerCount, myIndex, playerOrder) {
+    gameState.totalPlayers = playerCount;
+    gameState.gameMode = config.mode;
+    gameState.boardSize = config.boardSize;
+    gameState.isOnline = true;
+    gameState.myPlayerIndex = myIndex;
+    gameState.playerOrder = playerOrder;
+    BOARD_SIZE = gameState.boardSize;
+
+    // 在线模式隐藏悔棋按钮
+    document.getElementById('undo-btn').style.display = 'none';
+
+    initBoard();
+
+    // 设置游戏状态监听
+    setupOnlineGameListeners();
+}
+
+function setupOnlineGameListeners() {
+    RoomManager.onGameStateChange((state) => {
+        if (state) {
+            // 同步游戏状态
+            gameState.pieces = state.pieces;
+            gameState.currentPlayerIndex = state.currentPlayerIndex;
+            gameState.alivePlayers = state.alivePlayers;
+            gameState.selectedPiece = null;
+            document.getElementById('hints').innerHTML = '';
+            renderPieces();
+            updateStatus();
+
+            // 检查游戏结束
+            if (state.alivePlayers.length === 1) {
+                setTimeout(() => alert(`游戏结束！${PLAYERS_DATA[state.alivePlayers[0]].name} 获胜！`), 100);
+            }
+        }
+    });
+}
+
 function saveState() {
+    if (gameState.isOnline) return; // 在线模式不保存历史
+
     const snapshot = {
         pieces: JSON.parse(JSON.stringify(gameState.pieces)),
         currentPlayerIndex: gameState.currentPlayerIndex,
@@ -50,6 +100,11 @@ function saveState() {
 }
 
 function undoMove() {
+    if (gameState.isOnline) {
+        alert("在线模式不能悔棋！");
+        return;
+    }
+
     if (moveHistory.length === 0) {
         alert("没有可以悔的棋了！");
         return;
@@ -84,6 +139,18 @@ function initBoard() {
 
     renderPieces();
     updateStatus();
+
+    // 在线模式：同步初始状态（仅房主）
+    if (gameState.isOnline) {
+        const user = RoomManager.getCurrentUser();
+        if (user && user.isHost) {
+            RoomManager.syncGameState({
+                pieces: gameState.pieces,
+                currentPlayerIndex: gameState.currentPlayerIndex,
+                alivePlayers: gameState.alivePlayers
+            });
+        }
+    }
 }
 
 // --- 核心布局算法 ---
@@ -344,7 +411,17 @@ function renderPieces() {
 }
 
 // --- 交互 ---
+function isMyTurn() {
+    if (!gameState.isOnline) return true;
+    return gameState.myPlayerIndex === gameState.currentPlayerIndex;
+}
+
 function handlePieceClick(piece) {
+    // 在线模式：检查是否是自己的回合
+    if (gameState.isOnline && !isMyTurn()) {
+        return; // 不是我的回合，忽略点击
+    }
+
     const currentPid = gameState.alivePlayers[gameState.currentPlayerIndex];
     if (piece.owner === currentPid) {
         gameState.selectedPiece = piece;
@@ -375,6 +452,12 @@ function showHints(piece) {
 
 function tryMove(p, x, y) {
     if (!canMove(p, x, y)) return;
+
+    // 在线模式：检查是否是自己的回合
+    if (gameState.isOnline && !isMyTurn()) {
+        return;
+    }
+
     saveState();
 
     const target = getPieceAt(x, y);
@@ -394,10 +477,28 @@ function tryMove(p, x, y) {
 
     if (gameState.alivePlayers.length === 1) {
         setTimeout(() => alert(`游戏结束！${PLAYERS_DATA[gameState.alivePlayers[0]].name} 获胜！`), 100);
+
+        // 在线模式：同步最终状态
+        if (gameState.isOnline) {
+            RoomManager.syncGameState({
+                pieces: gameState.pieces,
+                currentPlayerIndex: gameState.currentPlayerIndex,
+                alivePlayers: gameState.alivePlayers
+            });
+        }
         return;
     }
 
     nextTurn();
+
+    // 在线模式：同步游戏状态
+    if (gameState.isOnline) {
+        RoomManager.syncGameState({
+            pieces: gameState.pieces,
+            currentPlayerIndex: gameState.currentPlayerIndex,
+            alivePlayers: gameState.alivePlayers
+        });
+    }
 }
 
 // --- 规则判断 ---
@@ -595,6 +696,18 @@ function updateStatus() {
     const pid = gameState.alivePlayers[gameState.currentPlayerIndex];
     const pData = PLAYERS_DATA[pid];
     const statusDiv = document.getElementById('status');
-    statusDiv.innerHTML = `当前回合: <span style="color:${pData.color}">${pData.name}</span>`;
+
+    let statusText = `当前回合: <span style="color:${pData.color}">${pData.name}</span>`;
+
+    // 在线模式显示是否是我的回合
+    if (gameState.isOnline) {
+        if (isMyTurn()) {
+            statusText += ' <span class="my-turn">(你的回合)</span>';
+        } else {
+            statusText += ' <span class="waiting-turn">(等待...)</span>';
+        }
+    }
+
+    statusDiv.innerHTML = statusText;
     document.getElementById('board-container').style.borderColor = pData.color;
 }

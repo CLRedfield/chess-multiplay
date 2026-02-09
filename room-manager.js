@@ -201,6 +201,15 @@ const RoomManager = (function () {
             [shuffledIdentities[i], shuffledIdentities[j]] = [shuffledIdentities[j], shuffledIdentities[i]];
         }
 
+        // 找到主公并放到第一位
+        const lordIndex = shuffledIdentities.indexOf('主公');
+        if (lordIndex !== -1 && lordIndex !== 0) {
+            // 交换身份
+            [shuffledIdentities[0], shuffledIdentities[lordIndex]] = [shuffledIdentities[lordIndex], shuffledIdentities[0]];
+            // 交换玩家顺序
+            [playerOrder[0], playerOrder[lordIndex]] = [playerOrder[lordIndex], playerOrder[0]];
+        }
+
         // 分配身份
         const identityMap = {};
         playerOrder.forEach((playerId, index) => {
@@ -210,6 +219,7 @@ const RoomManager = (function () {
         await roomRef.update({
             status: 'playing',
             identities: identityMap,
+            playerOrder: playerOrder, // 更新玩家顺序
             startedAt: firebase.database.ServerValue.TIMESTAMP
         });
     }

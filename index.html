@@ -546,6 +546,7 @@
                 document.getElementById('game-ui').style.display = 'flex';
 
                 // 初始化在线游戏
+                // 重要：必须使用 roomData 中的 playerOrder，因为可能已经被重新排序（主公置顶）
                 const playerOrder = roomData.playerOrder || [];
                 const currentUser = RoomManager.getCurrentUser();
                 const myIndex = playerOrder.indexOf(currentUser.id);

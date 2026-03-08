@@ -11,6 +11,7 @@
     --card-bg: #ffffff;
     --card-border: #e2e8f0;
     --grid-size: min(5.2vh, 5.2vw);
+    --board-cols: 16;
     --font-stack: "KaiTi", "楷体", serif;
 }
 
@@ -58,7 +59,7 @@ body {
     box-shadow:
         0 20px 50px -12px rgba(0, 0, 0, 0.1),
         0 0 0 1px rgba(0, 0, 0, 0.02);
-    max-width: 550px;
+    max-width: 760px;
     width: 100%;
     transition: transform 0.3s ease;
 }
@@ -102,7 +103,7 @@ body {
 /* Mode Cards */
 .mode-cards {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 12px;
 }
 
@@ -143,6 +144,57 @@ body {
 .mode-desc {
     font-size: 0.8rem;
     color: var(--text-secondary);
+}
+
+.duel-settings-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.duel-setting-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.duel-setting-title {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.choice-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.choice-pill {
+    border: 2px solid #dbeafe;
+    background: white;
+    color: var(--text-primary);
+    border-radius: 999px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.choice-pill:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
+}
+
+.choice-pill.selected {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(37, 99, 235, 0.04));
+    border-color: var(--primary-color);
+    color: var(--primary-color);
 }
 
 /* Player Selector */
@@ -367,7 +419,7 @@ input[type=range] {
 
 #info-panel {
     width: 100%;
-    max-width: calc(var(--grid-size) * 16 + var(--grid-size));
+    max-width: calc(var(--grid-size) * var(--board-cols) + var(--grid-size));
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -440,14 +492,34 @@ input[type=range] {
     border-radius: 4px;
 }
 
-.grid-layer.grid-16 {
+.grid-layer.grid-16x16 {
     grid-template-columns: repeat(16, var(--grid-size));
     grid-template-rows: repeat(16, var(--grid-size));
 }
 
-.grid-layer.grid-10 {
+.grid-layer.grid-12x12 {
+    grid-template-columns: repeat(12, var(--grid-size));
+    grid-template-rows: repeat(12, var(--grid-size));
+}
+
+.grid-layer.grid-10x10 {
     grid-template-columns: repeat(10, var(--grid-size));
     grid-template-rows: repeat(10, var(--grid-size));
+}
+
+.grid-layer.grid-9x10 {
+    grid-template-columns: repeat(9, var(--grid-size));
+    grid-template-rows: repeat(10, var(--grid-size));
+}
+
+.grid-layer.grid-8x8 {
+    grid-template-columns: repeat(8, var(--grid-size));
+    grid-template-rows: repeat(8, var(--grid-size));
+}
+
+.grid-layer.grid-8x4 {
+    grid-template-columns: repeat(8, var(--grid-size));
+    grid-template-rows: repeat(4, var(--grid-size));
 }
 
 .cell {
@@ -456,19 +528,45 @@ input[type=range] {
     box-sizing: border-box;
 }
 
-.grid-16 .cell:nth-child(16n) {
+.grid-16x16 .cell:nth-child(16n) {
     border-right: none;
 }
 
-.grid-16 .cell:nth-last-child(-n+16) {
+.grid-16x16 .cell:nth-last-child(-n+16) {
     border-bottom: none;
 }
 
-.grid-10 .cell:nth-child(10n) {
+.grid-12x12 .cell:nth-child(12n) {
     border-right: none;
 }
 
-.grid-10 .cell:nth-last-child(-n+10) {
+.grid-12x12 .cell:nth-last-child(-n+12) {
+    border-bottom: none;
+}
+
+.grid-10x10 .cell:nth-child(10n) {
+    border-right: none;
+}
+
+.grid-10x10 .cell:nth-last-child(-n+10) {
+    border-bottom: none;
+}
+
+.grid-9x10 .cell:nth-child(9n) {
+    border-right: none;
+}
+
+.grid-9x10 .cell:nth-last-child(-n+9) {
+    border-bottom: none;
+}
+
+.grid-8x8 .cell:nth-child(8n),
+.grid-8x4 .cell:nth-child(8n) {
+    border-right: none;
+}
+
+.grid-8x8 .cell:nth-last-child(-n+8),
+.grid-8x4 .cell:nth-last-child(-n+8) {
     border-bottom: none;
 }
 
@@ -504,6 +602,10 @@ input[type=range] {
     z-index: 10;
     margin-left: calc(var(--grid-size) * 0.075);
     margin-top: calc(var(--grid-size) * 0.075);
+}
+
+.face-down-piece {
+    letter-spacing: 0.08em;
 }
 
 .piece:hover {
@@ -588,7 +690,12 @@ input[type=range] {
     }
 
     .mode-cards {
+        grid-template-columns: repeat(2, 1fr);
         gap: 10px;
+    }
+
+    .mode-cards-mini {
+        grid-template-columns: repeat(2, 1fr);
     }
 
     .mode-card {
@@ -601,6 +708,10 @@ input[type=range] {
 
     .mode-name {
         font-size: 0.9rem;
+    }
+
+    .choice-pills {
+        gap: 8px;
     }
 }
 
@@ -621,6 +732,10 @@ input[type=range] {
 
 .main-menu-box {
     max-width: 450px;
+}
+
+.lobby-box {
+    max-width: 860px;
 }
 
 .main-menu-buttons {
@@ -754,7 +869,7 @@ input[type=range] {
 
 .mode-cards-mini {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 8px;
     margin-bottom: 16px;
 }

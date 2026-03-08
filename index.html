@@ -24,12 +24,12 @@
                 <button class="menu-btn local-btn" onclick="showLocalMode()">
                     <span class="btn-icon">🎮</span>
                     <span class="btn-text">本地游戏</span>
-                    <span class="btn-desc">同屏多人对战</span>
+                    <span class="btn-desc">同屏多人、双人、人机</span>
                 </button>
                 <button class="menu-btn online-btn" onclick="showOnlineLobby()">
                     <span class="btn-icon">🌐</span>
                     <span class="btn-text">在线游戏</span>
-                    <span class="btn-desc">联网多人对战</span>
+                    <span class="btn-desc">联网多人、2v2、双人</span>
                 </button>
             </div>
         </div>
@@ -52,17 +52,32 @@
                 <div class="lobby-panel create-panel">
                     <h3>创建房间</h3>
                     <div class="mode-cards-mini">
-                        <div class="mode-card-mini selected" data-mode="chinese" data-board="16">
+                        <div class="mode-card-mini selected" data-mode-id="chaos_chinese_16">
                             <span>🐉</span> 中国16×16
                         </div>
-                        <div class="mode-card-mini" data-mode="chinese" data-board="10">
+                        <div class="mode-card-mini" data-mode-id="chaos_chinese_10">
                             <span>🀄</span> 中国10×10
                         </div>
-                        <div class="mode-card-mini" data-mode="western" data-board="16">
+                        <div class="mode-card-mini" data-mode-id="chaos_western_16">
                             <span>♛</span> 国际16×16
                         </div>
-                        <div class="mode-card-mini" data-mode="western" data-board="10">
+                        <div class="mode-card-mini" data-mode-id="chaos_western_10">
                             <span>♞</span> 国际10×10
+                        </div>
+                        <div class="mode-card-mini" data-mode-id="team_chinese_12">
+                            <span>🤝</span> 中国2v2
+                        </div>
+                        <div class="mode-card-mini" data-mode-id="team_western_12">
+                            <span>🤝</span> 国际2v2
+                        </div>
+                        <div class="mode-card-mini" data-mode-id="duel_xiangqi">
+                            <span>⚔</span> 双人象棋
+                        </div>
+                        <div class="mode-card-mini" data-mode-id="duel_chess">
+                            <span>♚</span> 双人国际
+                        </div>
+                        <div class="mode-card-mini" data-mode-id="duel_dark">
+                            <span>🎴</span> 双人揭棋
                         </div>
                     </div>
                     <button class="action-btn create-btn" onclick="createOnlineRoom()">🏠 创建房间</button>
@@ -142,31 +157,56 @@
             <div class="menu-section">
                 <label class="section-label">选择模式</label>
                 <div class="mode-cards">
-                    <div class="mode-card selected" data-mode="chinese" data-board="16">
+                    <div class="mode-card selected" data-mode-id="chaos_chinese_16">
                         <div class="mode-icon">🐉</div>
                         <div class="mode-name">中国象棋</div>
                         <div class="mode-desc">16×16 大棋盘</div>
                     </div>
-                    <div class="mode-card" data-mode="chinese" data-board="10">
+                    <div class="mode-card" data-mode-id="chaos_chinese_10">
                         <div class="mode-icon">🀄</div>
                         <div class="mode-name">中国象棋</div>
                         <div class="mode-desc">10×10 小棋盘</div>
                     </div>
-                    <div class="mode-card" data-mode="western" data-board="16">
+                    <div class="mode-card" data-mode-id="chaos_western_16">
                         <div class="mode-icon">♛</div>
                         <div class="mode-name">国际象棋</div>
                         <div class="mode-desc">16×16 大棋盘</div>
                     </div>
-                    <div class="mode-card" data-mode="western" data-board="10">
+                    <div class="mode-card" data-mode-id="chaos_western_10">
                         <div class="mode-icon">♞</div>
                         <div class="mode-name">国际象棋</div>
                         <div class="mode-desc">10×10 小棋盘</div>
+                    </div>
+                    <div class="mode-card" data-mode-id="team_chinese_12">
+                        <div class="mode-icon">🤝</div>
+                        <div class="mode-name">中国象棋 2v2</div>
+                        <div class="mode-desc">12×12 团队对战</div>
+                    </div>
+                    <div class="mode-card" data-mode-id="team_western_12">
+                        <div class="mode-icon">🤝</div>
+                        <div class="mode-name">国际象棋 2v2</div>
+                        <div class="mode-desc">12×12 团队对战</div>
+                    </div>
+                    <div class="mode-card" data-mode-id="duel_xiangqi">
+                        <div class="mode-icon">⚔</div>
+                        <div class="mode-name">双人象棋</div>
+                        <div class="mode-desc">9×10 标准棋盘</div>
+                    </div>
+                    <div class="mode-card" data-mode-id="duel_chess">
+                        <div class="mode-icon">♚</div>
+                        <div class="mode-name">双人国际象棋</div>
+                        <div class="mode-desc">8×8 标准棋盘</div>
+                    </div>
+                    <div class="mode-card" data-mode-id="duel_dark">
+                        <div class="mode-icon">🎴</div>
+                        <div class="mode-name">双人中国象棋揭棋</div>
+                        <div class="mode-desc">8×4 翻棋对决</div>
                     </div>
                 </div>
             </div>
 
             <!-- 人数选择 -->
-            <div class="menu-section">
+            <div class="menu-section" id="player-count-section">
                 <label class="section-label">玩家人数</label>
                 <div class="player-selector">
                     <input type="range" id="player-count" min="5" max="8" value="5" oninput="updateLabel()">
@@ -175,10 +215,35 @@
             </div>
 
             <!-- 身份牌抽取 -->
-            <div class="menu-section">
+            <div class="menu-section" id="identity-section">
                 <label class="section-label">身份牌抽取 <span class="identity-hint">(点击卡牌查看身份)</span></label>
                 <button class="draw-btn" onclick="drawIdentityCards()">🎴 洗牌抽取</button>
                 <div id="identity-cards" class="identity-cards-container"></div>
+            </div>
+
+            <div class="menu-section" id="duel-settings-section" style="display: none;">
+                <label class="section-label">双人设置</label>
+                <div class="duel-settings-box">
+                    <div class="duel-setting-row">
+                        <span class="duel-setting-title">对战方式</span>
+                        <div class="choice-pills">
+                            <button type="button" class="choice-pill duel-player-option selected"
+                                data-versus="human">双人同屏</button>
+                            <button type="button" class="choice-pill duel-player-option" data-versus="ai">人机对战</button>
+                        </div>
+                    </div>
+                    <div class="duel-setting-row" id="ai-difficulty-row" style="display: none;">
+                        <span class="duel-setting-title">AI 难度</span>
+                        <div class="choice-pills">
+                            <button type="button" class="choice-pill ai-difficulty-option selected"
+                                data-difficulty="easy">简单</button>
+                            <button type="button" class="choice-pill ai-difficulty-option"
+                                data-difficulty="medium">中等</button>
+                            <button type="button" class="choice-pill ai-difficulty-option"
+                                data-difficulty="hard">困难</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- 开始按钮 -->
@@ -219,7 +284,27 @@
     <script src="room-manager.js"></script>
     <script src="game.js"></script>
     <script>
-        // === 界面切换 ===
+        const IDENTITY_CONFIG = {
+            5: { '主公': 1, '忠臣': 1, '内奸': 1, '反贼': 2 },
+            6: { '主公': 1, '忠臣': 1, '内奸': 1, '反贼': 3 },
+            7: { '主公': 1, '忠臣': 2, '内奸': 1, '反贼': 3 },
+            8: { '主公': 1, '忠臣': 2, '内奸': 1, '反贼': 4 }
+        };
+
+        const ROLE_STYLES = {
+            '主公': { color: '#dc2626', bg: '#fef2f2', icon: '👑', border: '#dc2626' },
+            '忠臣': { color: '#059669', bg: '#ecfdf5', icon: '🛡️', border: '#059669' },
+            '内奸': { color: '#7c3aed', bg: '#f5f3ff', icon: '🎭', border: '#7c3aed' },
+            '反贼': { color: '#ea580c', bg: '#fff7ed', icon: '⚔️', border: '#ea580c' },
+            '红队': { color: '#dc2626', bg: '#fef2f2', icon: '🔴', border: '#dc2626' },
+            '蓝队': { color: '#2563eb', bg: '#eff6ff', icon: '🔵', border: '#2563eb' }
+        };
+
+        let currentIdentities = [];
+        let currentFlippedCard = null;
+        let isInOnlineRoom = false;
+        let hasStartedOnlineGame = false;
+
         function showMainMenu() {
             hideAllScreens();
             document.getElementById('main-menu').style.display = 'flex';
@@ -248,60 +333,59 @@
             document.getElementById('game-ui').style.display = 'none';
         }
 
-        // === 本地模式 ===
+        function getSelectedModeConfig(cardSelector) {
+            const selected = document.querySelector(cardSelector);
+            return normalizeGameConfig({ modeId: selected.dataset.modeId });
+        }
+
+        function buildRoomConfig(modeConfig) {
+            return {
+                modeId: modeConfig.modeId,
+                label: modeConfig.label,
+                shortLabel: modeConfig.shortLabel,
+                category: modeConfig.category,
+                ruleset: modeConfig.ruleset,
+                boardCols: modeConfig.boardCols,
+                boardRows: modeConfig.boardRows,
+                boardSize: modeConfig.boardCols,
+                minPlayers: modeConfig.minPlayers,
+                maxPlayers: modeConfig.maxPlayers,
+                identityMode: modeConfig.identityMode,
+                is2v2: Boolean(modeConfig.is2v2)
+            };
+        }
+
         function updateLabel() {
             const count = document.getElementById('player-count').value;
-            document.getElementById('player-label').innerText = count + " 人局";
+            document.getElementById('player-label').innerText = count + ' 人局';
             document.getElementById('identity-cards').innerHTML = '';
         }
 
-        // 模式卡片选择
-        document.querySelectorAll('.mode-card').forEach(card => {
-            card.addEventListener('click', () => {
-                document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
-                card.classList.add('selected');
-            });
-        });
+        function updateModeDependentSections(modeConfig) {
+            document.getElementById('player-count-section').style.display = modeConfig.category === 'chaos' ? 'block' : 'none';
+            document.getElementById('identity-section').style.display = modeConfig.category === 'chaos' ? 'block' : 'none';
+            document.getElementById('duel-settings-section').style.display = modeConfig.category === 'duel' ? 'block' : 'none';
+            updateAiDifficultyVisibility();
+        }
 
-        // 在线大厅模式卡片
-        document.querySelectorAll('.mode-card-mini').forEach(card => {
-            card.addEventListener('click', () => {
-                document.querySelectorAll('.mode-card-mini').forEach(c => c.classList.remove('selected'));
-                card.classList.add('selected');
-            });
-        });
-
-        // 三国杀身份配置
-        const IDENTITY_CONFIG = {
-            5: { '主公': 1, '忠臣': 1, '内奸': 1, '反贼': 2 },
-            6: { '主公': 1, '忠臣': 1, '内奸': 1, '反贼': 3 },
-            7: { '主公': 1, '忠臣': 2, '内奸': 1, '反贼': 3 },
-            8: { '主公': 1, '忠臣': 2, '内奸': 1, '反贼': 4 }
-        };
-
-        // 身份颜色和图标
-        const IDENTITY_STYLES = {
-            '主公': { color: '#dc2626', bg: '#fef2f2', icon: '👑', border: '#dc2626' },
-            '忠臣': { color: '#059669', bg: '#ecfdf5', icon: '🛡️', border: '#059669' },
-            '内奸': { color: '#7c3aed', bg: '#f5f3ff', icon: '🎭', border: '#7c3aed' },
-            '反贼': { color: '#ea580c', bg: '#fff7ed', icon: '⚔️', border: '#ea580c' }
-        };
-
-        let currentIdentities = [];
-        let currentFlippedCard = null;
+        function updateAiDifficultyVisibility() {
+            const modeConfig = getSelectedModeConfig('.mode-card.selected');
+            const versus = document.querySelector('.duel-player-option.selected')?.dataset.versus || 'human';
+            document.getElementById('ai-difficulty-row').style.display =
+                modeConfig.category === 'duel' && versus === 'ai' ? 'flex' : 'none';
+        }
 
         function drawIdentityCards() {
-            const count = parseInt(document.getElementById('player-count').value);
+            const count = parseInt(document.getElementById('player-count').value, 10);
             const config = IDENTITY_CONFIG[count];
-
             currentIdentities = [];
-            for (const [identity, num] of Object.entries(config)) {
-                for (let i = 0; i < num; i++) {
+
+            Object.entries(config).forEach(([identity, amount]) => {
+                for (let i = 0; i < amount; i++) {
                     currentIdentities.push(identity);
                 }
-            }
+            });
 
-            // 洗牌 (Fisher-Yates)
             for (let i = currentIdentities.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [currentIdentities[i], currentIdentities[j]] = [currentIdentities[j], currentIdentities[i]];
@@ -317,8 +401,6 @@
             currentIdentities.forEach((identity, index) => {
                 const card = document.createElement('div');
                 card.className = 'identity-card';
-                card.dataset.index = index;
-                card.dataset.identity = identity;
 
                 const cardBack = document.createElement('div');
                 cardBack.className = 'card-face card-back';
@@ -327,7 +409,7 @@
                     <div class="card-number">${index + 1}</div>
                 `;
 
-                const style = IDENTITY_STYLES[identity];
+                const style = ROLE_STYLES[identity];
                 const cardFront = document.createElement('div');
                 cardFront.className = 'card-face card-front';
                 cardFront.style.backgroundColor = style.bg;
@@ -339,12 +421,10 @@
 
                 card.appendChild(cardBack);
                 card.appendChild(cardFront);
-
-                card.addEventListener('click', (e) => {
-                    e.stopPropagation();
+                card.addEventListener('click', event => {
+                    event.stopPropagation();
                     flipCard(card);
                 });
-
                 container.appendChild(card);
             });
         }
@@ -363,15 +443,42 @@
             }
         }
 
-        document.addEventListener('click', (e) => {
-            if (currentFlippedCard && !e.target.closest('.identity-card')) {
+        document.addEventListener('click', event => {
+            if (currentFlippedCard && !event.target.closest('.identity-card')) {
                 currentFlippedCard.classList.remove('flipped');
                 currentFlippedCard = null;
             }
         });
 
-        // === 在线模式 ===
-        let isInOnlineRoom = false;
+        document.querySelectorAll('.mode-card').forEach(card => {
+            card.addEventListener('click', () => {
+                document.querySelectorAll('.mode-card').forEach(item => item.classList.remove('selected'));
+                card.classList.add('selected');
+                updateModeDependentSections(normalizeGameConfig({ modeId: card.dataset.modeId }));
+            });
+        });
+
+        document.querySelectorAll('.mode-card-mini').forEach(card => {
+            card.addEventListener('click', () => {
+                document.querySelectorAll('.mode-card-mini').forEach(item => item.classList.remove('selected'));
+                card.classList.add('selected');
+            });
+        });
+
+        document.querySelectorAll('.duel-player-option').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.duel-player-option').forEach(item => item.classList.remove('selected'));
+                button.classList.add('selected');
+                updateAiDifficultyVisibility();
+            });
+        });
+
+        document.querySelectorAll('.ai-difficulty-option').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.ai-difficulty-option').forEach(item => item.classList.remove('selected'));
+                button.classList.add('selected');
+            });
+        });
 
         async function createOnlineRoom() {
             const username = document.getElementById('username-input').value.trim();
@@ -380,17 +487,14 @@
                 return;
             }
 
-            const selectedCard = document.querySelector('.mode-card-mini.selected');
-            const config = {
-                mode: selectedCard.dataset.mode,
-                boardSize: parseInt(selectedCard.dataset.board)
-            };
+            const modeConfig = getSelectedModeConfig('.mode-card-mini.selected');
 
             try {
-                const roomCode = await RoomManager.createRoom(username, config);
+                const roomCode = await RoomManager.createRoom(username, buildRoomConfig(modeConfig));
                 isInOnlineRoom = true;
+                hasStartedOnlineGame = false;
                 showWaitingRoom();
-                updateWaitingRoomUI(roomCode, config);
+                updateWaitingRoomUI(roomCode, modeConfig);
                 setupRoomListeners();
             } catch (error) {
                 alert('创建房间失败: ' + error.message);
@@ -413,6 +517,7 @@
             try {
                 const roomData = await RoomManager.joinRoom(roomCode, username);
                 isInOnlineRoom = true;
+                hasStartedOnlineGame = false;
                 showWaitingRoom();
                 updateWaitingRoomUI(roomCode, roomData.config);
                 setupRoomListeners();
@@ -422,34 +527,45 @@
         }
 
         async function leaveOnlineRoom() {
-            if (confirm('确定要离开房间吗？')) {
-                await RoomManager.leaveRoom();
-                isInOnlineRoom = false;
-                showMainMenu();
+            if (!confirm('确定要离开房间吗？')) {
+                return;
             }
+
+            teardownCurrentGame();
+            await RoomManager.leaveRoom();
+            isInOnlineRoom = false;
+            hasStartedOnlineGame = false;
+            showMainMenu();
         }
 
         function updateWaitingRoomUI(roomCode, config) {
+            const modeConfig = normalizeGameConfig(config);
             document.getElementById('display-room-code').textContent = roomCode;
-
-            const modeText = config.mode === 'chinese' ? '中国象棋' : '国际象棋';
-            document.getElementById('display-room-mode').textContent = `${modeText} ${config.boardSize}×${config.boardSize}`;
+            document.getElementById('display-room-mode').textContent = modeConfig.label;
+            document.getElementById('my-identity-section').style.display = 'none';
+            document.getElementById('my-identity-card').innerHTML = `
+                <div class="identity-icon">?</div>
+                <div class="identity-name">点击查看</div>
+            `;
+            document.getElementById('my-identity-card').style.backgroundColor = '';
+            document.getElementById('my-identity-card').style.borderColor = '';
         }
 
         function setupRoomListeners() {
-            RoomManager.onRoomChange((roomData) => {
+            RoomManager.onRoomChange(roomData => {
                 if (!roomData) {
-                    // 房间被删除
-                    alert('房间已关闭');
+                    teardownCurrentGame();
                     isInOnlineRoom = false;
+                    hasStartedOnlineGame = false;
+                    alert('房间已关闭');
                     showMainMenu();
                     return;
                 }
 
                 updatePlayersList(roomData);
 
-                // 检查游戏是否开始
-                if (roomData.status === 'playing') {
+                if (roomData.status === 'playing' && !hasStartedOnlineGame) {
+                    hasStartedOnlineGame = true;
                     startOnlineGamePlay(roomData);
                 }
             });
@@ -459,41 +575,55 @@
             const container = document.getElementById('players-list');
             const players = roomData.players || {};
             const playerOrder = roomData.playerOrder || Object.keys(players);
-            const host = roomData.host;
             const currentUser = RoomManager.getCurrentUser();
+            const modeConfig = normalizeGameConfig(roomData.config || {});
+            const count = playerOrder.filter(playerId => players[playerId]).length;
 
             container.innerHTML = '';
-            let count = 0;
-
             playerOrder.forEach((playerId, index) => {
                 const player = players[playerId];
-                if (!player) return;
-
-                count++;
-                const isHost = playerId === host;
-                const isMe = currentUser && playerId === currentUser.id;
+                if (!player) {
+                    return;
+                }
 
                 const div = document.createElement('div');
-                div.className = 'player-item' + (isMe ? ' me' : '');
-                div.innerHTML = `
-                    <span class="player-index">${index + 1}</span>
-                    <span class="player-name">${player.name}${isMe ? ' (我)' : ''}</span>
-                    ${isHost ? '<span class="host-badge">👑 房主</span>' : ''}
-                `;
+                div.className = 'player-item' + (currentUser && playerId === currentUser.id ? ' me' : '');
+
+                const indexBadge = document.createElement('span');
+                indexBadge.className = 'player-index';
+                indexBadge.textContent = index + 1;
+
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'player-name';
+                nameSpan.textContent = player.name + (currentUser && playerId === currentUser.id ? ' (我)' : '');
+
+                div.appendChild(indexBadge);
+                div.appendChild(nameSpan);
+
+                if (playerId === roomData.host) {
+                    const hostBadge = document.createElement('span');
+                    hostBadge.className = 'host-badge';
+                    hostBadge.textContent = '👑 房主';
+                    div.appendChild(hostBadge);
+                }
+
                 container.appendChild(div);
             });
 
-            document.getElementById('player-count-display').textContent = `${count}/5-8`;
+            const totalLabel = modeConfig.minPlayers === modeConfig.maxPlayers
+                ? modeConfig.maxPlayers
+                : `${modeConfig.minPlayers}-${modeConfig.maxPlayers}`;
+            document.getElementById('player-count-display').textContent = `${count}/${totalLabel}`;
 
-            // 显示/隐藏开始按钮
             const startBtn = document.getElementById('start-game-btn');
             const hint = document.getElementById('waiting-hint');
-
             if (currentUser && currentUser.isHost) {
                 startBtn.style.display = 'block';
                 hint.style.display = 'none';
-                startBtn.disabled = count < 5;
-                startBtn.textContent = count < 5 ? `⚔️ 需要至少5人 (${count}/5)` : '⚔️ 开始游戏';
+                startBtn.disabled = count < modeConfig.minPlayers;
+                startBtn.textContent = count < modeConfig.minPlayers
+                    ? `⚔️ 需要至少${modeConfig.minPlayers}人 (${count}/${modeConfig.minPlayers})`
+                    : '⚔️ 开始游戏';
             } else {
                 startBtn.style.display = 'none';
                 hint.style.display = 'block';
@@ -502,20 +632,24 @@
 
         async function startOnlineGame() {
             const roomData = RoomManager.getCurrentRoom();
+            const modeConfig = normalizeGameConfig(roomData.config || {});
             const playerCount = Object.keys(roomData.players || {}).length;
 
-            if (playerCount < 5) {
-                alert("人数不足，至少需要5人才能开始游戏！");
+            if (playerCount < modeConfig.minPlayers) {
+                alert(`人数不足，至少需要${modeConfig.minPlayers}人才能开始游戏！`);
                 return;
             }
 
-            // 生成身份
-            const config = IDENTITY_CONFIG[playerCount];
-            const identities = [];
-            for (const [identity, num] of Object.entries(config)) {
-                for (let i = 0; i < num; i++) {
-                    identities.push(identity);
-                }
+            let identities = [];
+            if (modeConfig.identityMode === 'chaos') {
+                const config = IDENTITY_CONFIG[playerCount];
+                Object.entries(config).forEach(([identity, amount]) => {
+                    for (let i = 0; i < amount; i++) {
+                        identities.push(identity);
+                    }
+                });
+            } else if (modeConfig.identityMode === 'team') {
+                identities = ['红队', '蓝队', '蓝队', '红队'];
             }
 
             try {
@@ -526,33 +660,31 @@
         }
 
         async function startOnlineGamePlay(roomData) {
-            // 显示我的身份
             const myIdentity = await RoomManager.getMyIdentity();
-            if (myIdentity) {
-                document.getElementById('my-identity-section').style.display = 'block';
-                const style = IDENTITY_STYLES[myIdentity];
-                const card = document.getElementById('my-identity-card');
-                card.innerHTML = `
+            const identitySection = document.getElementById('my-identity-section');
+            const identityCard = document.getElementById('my-identity-card');
+            const style = myIdentity ? ROLE_STYLES[myIdentity] : null;
+
+            if (style) {
+                identitySection.style.display = 'block';
+                identityCard.innerHTML = `
                     <div class="identity-icon">${style.icon}</div>
-                    <div class="identity-name" style="color: ${style.color}">${myIdentity}</div>
+                    <div class="identity-name" style="color:${style.color}">${myIdentity}</div>
                 `;
-                card.style.backgroundColor = style.bg;
-                card.style.borderColor = style.border;
+                identityCard.style.backgroundColor = style.bg;
+                identityCard.style.borderColor = style.border;
+            } else {
+                identitySection.style.display = 'none';
             }
 
-            // 切换到游戏界面
             setTimeout(() => {
                 hideAllScreens();
                 document.getElementById('game-ui').style.display = 'flex';
-
-                // 初始化在线游戏
-                // 重要：必须使用 roomData 中的 playerOrder，因为可能已经被重新排序（主公置顶）
                 const playerOrder = roomData.playerOrder || [];
                 const currentUser = RoomManager.getCurrentUser();
                 const myIndex = playerOrder.indexOf(currentUser.id);
-
                 initOnlineGame(roomData.config, playerOrder.length, myIndex, playerOrder);
-            }, 2000);
+            }, 800);
         }
 
         function copyRoomCode() {
@@ -562,19 +694,24 @@
             });
         }
 
-        function exitGame() {
-            if (gameState.isOnline) {
-                if (confirm('确定要退出游戏吗？')) {
-                    RoomManager.leaveRoom();
-                    isInOnlineRoom = false;
-                    showMainMenu();
-                }
-            } else {
-                if (confirm('确定要退出游戏吗？')) {
-                    showMainMenu();
-                }
+        async function exitGame() {
+            if (!confirm('确定要退出游戏吗？')) {
+                return;
             }
+
+            teardownCurrentGame();
+
+            if (gameState.isOnline) {
+                await RoomManager.leaveRoom();
+                isInOnlineRoom = false;
+                hasStartedOnlineGame = false;
+            }
+
+            showMainMenu();
         }
+
+        updateLabel();
+        updateModeDependentSections(getSelectedModeConfig('.mode-card.selected'));
     </script>
 </body>
 

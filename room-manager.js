@@ -4,13 +4,11 @@
  */
 
 const RoomManager = (function () {
-    // 私有变量
     let currentRoom = null;
     let currentUser = null;
     let roomRef = null;
     let unsubscribers = [];
 
-    // 生成6位随机房间码
     function generateRoomCode() {
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
         let code = '';
@@ -20,20 +18,67 @@ const RoomManager = (function () {
         return code;
     }
 
-    // 生成唯一玩家ID
     function generatePlayerId() {
-        return 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        return `player_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
     }
 
-    /**
-     * 创建房间
-     * @param {string} username - 用户名
-     * @param {object} config - 游戏配置 { mode, boardSize }
-     * @returns {Promise<string>} - 房间码
-     */
+    function getPlayerLimits(config = {}) {
+        if (config.minPlayers && config.maxPlayers) {
+            return {
+                min: config.minPlayers,
+                max: config.maxPlayers
+            };
+        }
+
+        if (config.is2v2) {
+            return { min: 4, max: 4 };
+        }
+
+        return { min: 5, max: 8 };
+    }
+
+    function sanitizePlayerOrder(players = {}, playerOrder = []) {
+        const existingIds = Object.keys(players);
+        const existingSet = new Set(existingIds);
+        const sanitized = (playerOrder || []).filter(playerId => existingSet.has(playerId));
+
+        existingIds.forEach(playerId => {
+            if (!sanitized.includes(playerId)) {
+                sanitized.push(playerId);
+            }
+        });
+
+        return sanitized;
+    }
+
+    function normalizeRoomConfig(config = {}) {
+        const limits = getPlayerLimits(config);
+        return {
+            ...config,
+            minPlayers: limits.min,
+            maxPlayers: limits.max
+        };
+    }
+
+    function clearListeners() {
+        unsubscribers.forEach(unsubscribe => unsubscribe());
+        unsubscribers = [];
+    }
+
+    async function cancelDisconnectHandlers() {
+        if (!currentRoom || !currentUser) {
+            return;
+        }
+
+        const roomPath = `rooms/${currentRoom.code}`;
+        await database.ref(roomPath).onDisconnect().cancel();
+        await database.ref(`${roomPath}/players/${currentUser.id}`).onDisconnect().cancel();
+    }
+
     async function createRoom(username, config) {
         const roomCode = generateRoomCode();
         const playerId = generatePlayerId();
+        const normalizedConfig = normalizeRoomConfig(config);
 
         currentUser = {
             id: playerId,
@@ -44,8 +89,8 @@ const RoomManager = (function () {
         const roomData = {
             host: playerId,
             hostName: username,
-            config: config,
-            status: 'waiting', // waiting, playing, finished
+            config: normalizedConfig,
+            status: 'waiting',
             players: {
                 [playerId]: {
                     name: username,
@@ -54,12 +99,12 @@ const RoomManager = (function () {
                 }
             },
             playerOrder: [playerId],
-            identities: null, // 游戏开始时分配
+            identities: null,
             gameState: null,
             createdAt: firebase.database.ServerValue.TIMESTAMP
         };
 
-        roomRef = database.ref('rooms/' + roomCode);
+        roomRef = database.ref(`rooms/${roomCode}`);
         await roomRef.set(roomData);
 
         currentRoom = {
@@ -67,20 +112,12 @@ const RoomManager = (function () {
             ...roomData
         };
 
-        // 设置断开连接时的清理
         setupDisconnectHandler(roomCode, playerId, true);
-
         return roomCode;
     }
 
-    /**
-     * 加入房间
-     * @param {string} roomCode - 房间码
-     * @param {string} username - 用户名
-     * @returns {Promise<object>} - 房间数据
-     */
     async function joinRoom(roomCode, username) {
-        roomRef = database.ref('rooms/' + roomCode);
+        roomRef = database.ref(`rooms/${roomCode}`);
 
         const snapshot = await roomRef.once('value');
         if (!snapshot.exists()) {
@@ -88,14 +125,17 @@ const RoomManager = (function () {
         }
 
         const roomData = snapshot.val();
-
         if (roomData.status !== 'waiting') {
             throw new Error('游戏已经开始，无法加入');
         }
 
-        const playerCount = Object.keys(roomData.players || {}).length;
-        if (playerCount >= 8) {
-            throw new Error('房间已满（最多8人）');
+        const normalizedConfig = normalizeRoomConfig(roomData.config || {});
+        const limits = getPlayerLimits(normalizedConfig);
+        const currentPlayers = roomData.players || {};
+        const currentOrder = sanitizePlayerOrder(currentPlayers, roomData.playerOrder);
+
+        if (currentOrder.length >= limits.max) {
+            throw new Error(`房间已满（最多${limits.max}人）`);
         }
 
         const playerId = generatePlayerId();
@@ -105,64 +145,64 @@ const RoomManager = (function () {
             isHost: false
         };
 
-        // 添加玩家
-        await roomRef.child('players/' + playerId).set({
+        await roomRef.child(`players/${playerId}`).set({
             name: username,
             ready: true,
             joinedAt: firebase.database.ServerValue.TIMESTAMP
         });
 
-        // 更新玩家顺序
-        const newOrder = [...(roomData.playerOrder || []), playerId];
+        const newOrder = [...currentOrder, playerId];
         await roomRef.child('playerOrder').set(newOrder);
 
         currentRoom = {
             code: roomCode,
-            ...roomData
+            ...roomData,
+            config: normalizedConfig,
+            players: {
+                ...currentPlayers,
+                [playerId]: {
+                    name: username,
+                    ready: true
+                }
+            },
+            playerOrder: newOrder
         };
 
         setupDisconnectHandler(roomCode, playerId, false);
-
         return currentRoom;
     }
 
-    /**
-     * 设置断开连接处理
-     */
     function setupDisconnectHandler(roomCode, playerId, isHost) {
-        const playerRef = database.ref('rooms/' + roomCode + '/players/' + playerId);
+        const roomPath = `rooms/${roomCode}`;
+        const playerRef = database.ref(`${roomPath}/players/${playerId}`);
 
         if (isHost) {
-            // 房主离开时删除整个房间
-            database.ref('rooms/' + roomCode).onDisconnect().remove();
-        } else {
-            // 普通玩家离开时只删除自己
-            playerRef.onDisconnect().remove();
+            database.ref(roomPath).onDisconnect().remove();
+            return;
         }
+
+        playerRef.onDisconnect().remove();
     }
 
-    /**
-     * 离开房间
-     */
     async function leaveRoom() {
-        if (!currentRoom || !currentUser) return;
+        if (!currentRoom || !currentUser || !roomRef) {
+            return;
+        }
 
-        // 取消所有监听
-        unsubscribers.forEach(unsub => unsub());
-        unsubscribers = [];
+        clearListeners();
+        await cancelDisconnectHandlers();
 
         if (currentUser.isHost) {
-            // 房主离开，删除房间
             await roomRef.remove();
         } else {
-            // 普通玩家离开
-            await roomRef.child('players/' + currentUser.id).remove();
+            await roomRef.child(`players/${currentUser.id}`).remove();
 
-            // 从玩家顺序中移除
-            const snapshot = await roomRef.child('playerOrder').once('value');
-            const order = snapshot.val() || [];
-            const newOrder = order.filter(id => id !== currentUser.id);
-            await roomRef.child('playerOrder').set(newOrder);
+            const snapshot = await roomRef.once('value');
+            if (snapshot.exists()) {
+                const roomData = snapshot.val();
+                const newOrder = sanitizePlayerOrder(roomData.players || {}, roomData.playerOrder);
+                await roomRef.child('playerOrder').set(newOrder);
+            }
         }
 
         currentRoom = null;
@@ -170,152 +210,147 @@ const RoomManager = (function () {
         roomRef = null;
     }
 
-    /**
-     * 开始游戏（仅房主可用）
-     * @param {Array} identities - 身份数组
-     */
-    async function startGame(identities) {
-        if (!currentUser.isHost) {
+    async function startGame(identities = []) {
+        if (!currentUser || !currentUser.isHost) {
             throw new Error('只有房主可以开始游戏');
         }
 
-        const snapshot = await roomRef.child('players').once('value');
-        const players = snapshot.val();
-        const playerCount = Object.keys(players).length;
-
-        if (playerCount < 5) {
-            throw new Error('至少需要5名玩家才能开始');
-        }
-        if (playerCount > 8) {
-            throw new Error('最多8名玩家');
+        const snapshot = await roomRef.once('value');
+        if (!snapshot.exists()) {
+            throw new Error('房间不存在');
         }
 
-        // 获取玩家顺序
-        const orderSnapshot = await roomRef.child('playerOrder').once('value');
-        const playerOrder = orderSnapshot.val() || Object.keys(players);
+        const roomData = snapshot.val();
+        const config = normalizeRoomConfig(roomData.config || {});
+        const players = roomData.players || {};
+        const playerOrder = sanitizePlayerOrder(players, roomData.playerOrder);
+        const limits = getPlayerLimits(config);
+        const playerCount = playerOrder.length;
 
-        // 洗牌身份
-        const shuffledIdentities = [...identities];
-        for (let i = shuffledIdentities.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffledIdentities[i], shuffledIdentities[j]] = [shuffledIdentities[j], shuffledIdentities[i]];
+        if (playerCount < limits.min) {
+            throw new Error(`至少需要${limits.min}名玩家才能开始`);
+        }
+        if (playerCount > limits.max) {
+            throw new Error(`最多${limits.max}名玩家`);
         }
 
-        // 找到主公并放到第一位
-        const lordIndex = shuffledIdentities.indexOf('主公');
-        if (lordIndex !== -1 && lordIndex !== 0) {
-            // 交换身份
-            [shuffledIdentities[0], shuffledIdentities[lordIndex]] = [shuffledIdentities[lordIndex], shuffledIdentities[0]];
-            // 交换玩家顺序
-            [playerOrder[0], playerOrder[lordIndex]] = [playerOrder[lordIndex], playerOrder[0]];
-        }
+        let identityMap = null;
+        if (Array.isArray(identities) && identities.length > 0) {
+            const shuffled = [...identities];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
 
-        // 分配身份
-        const identityMap = {};
-        playerOrder.forEach((playerId, index) => {
-            identityMap[playerId] = shuffledIdentities[index];
-        });
+            if (config.identityMode === 'chaos') {
+                const lordIndex = shuffled.indexOf('主公');
+                if (lordIndex !== -1 && lordIndex !== 0) {
+                    [shuffled[0], shuffled[lordIndex]] = [shuffled[lordIndex], shuffled[0]];
+                    [playerOrder[0], playerOrder[lordIndex]] = [playerOrder[lordIndex], playerOrder[0]];
+                }
+            }
+
+            identityMap = {};
+            playerOrder.forEach((playerId, index) => {
+                identityMap[playerId] = shuffled[index] ?? null;
+            });
+        }
 
         await roomRef.update({
             status: 'playing',
+            config,
             identities: identityMap,
-            playerOrder: playerOrder, // 更新玩家顺序
+            playerOrder,
+            gameState: null,
             startedAt: firebase.database.ServerValue.TIMESTAMP
         });
     }
 
-    /**
-     * 同步游戏状态
-     * @param {object} state - 游戏状态
-     */
     async function syncGameState(state) {
-        if (!roomRef) return;
+        if (!roomRef) {
+            return;
+        }
         await roomRef.child('gameState').set(state);
     }
 
-    /**
-     * 监听房间变化
-     * @param {function} callback - 回调函数
-     */
     function onRoomChange(callback) {
-        if (!roomRef) return;
+        if (!roomRef) {
+            return;
+        }
 
-        const unsub = roomRef.on('value', (snapshot) => {
-            if (snapshot.exists()) {
-                const val = snapshot.val();
-                // 更新内部状态
-                if (currentRoom) {
-                    currentRoom = {
-                        ...currentRoom,
-                        ...val
-                    };
-                }
-                callback(val);
-            } else {
+        const listener = roomRef.on('value', snapshot => {
+            if (!snapshot.exists()) {
                 callback(null);
+                return;
             }
+
+            const value = snapshot.val();
+            const normalizedConfig = normalizeRoomConfig(value.config || {});
+            const normalizedOrder = sanitizePlayerOrder(value.players || {}, value.playerOrder);
+
+            if (
+                currentUser &&
+                currentUser.isHost &&
+                value.status === 'waiting' &&
+                JSON.stringify(normalizedOrder) !== JSON.stringify(value.playerOrder || [])
+            ) {
+                roomRef.child('playerOrder').set(normalizedOrder);
+            }
+
+            currentRoom = {
+                ...(currentRoom || {}),
+                code: currentRoom?.code || roomRef.key,
+                ...value,
+                config: normalizedConfig,
+                playerOrder: normalizedOrder
+            };
+
+            callback(currentRoom);
         });
 
-        unsubscribers.push(() => roomRef.off('value', unsub));
+        unsubscribers.push(() => roomRef.off('value', listener));
     }
 
-    /**
-     * 监听游戏状态变化
-     * @param {function} callback - 回调函数
-     */
     function onGameStateChange(callback) {
-        if (!roomRef) return;
+        if (!roomRef) {
+            return;
+        }
 
         const stateRef = roomRef.child('gameState');
-        const unsub = stateRef.on('value', (snapshot) => {
-            if (snapshot.exists()) {
-                callback(snapshot.val());
-            }
+        const listener = stateRef.on('value', snapshot => {
+            callback(snapshot.exists() ? snapshot.val() : null);
         });
 
-        unsubscribers.push(() => stateRef.off('value', unsub));
+        unsubscribers.push(() => stateRef.off('value', listener));
     }
 
-    /**
-     * 获取当前用户信息
-     */
     function getCurrentUser() {
         return currentUser;
     }
 
-    /**
-     * 获取当前房间信息
-     */
     function getCurrentRoom() {
         return currentRoom;
     }
 
-    /**
-     * 获取我的身份
-     */
     async function getMyIdentity() {
-        if (!roomRef || !currentUser) return null;
+        if (!roomRef || !currentUser) {
+            return null;
+        }
 
-        const snapshot = await roomRef.child('identities/' + currentUser.id).once('value');
-        return snapshot.val();
+        const snapshot = await roomRef.child(`identities/${currentUser.id}`).once('value');
+        return snapshot.exists() ? snapshot.val() : null;
     }
 
-    /**
-     * 检查是否是我的回合
-     * @param {number} currentPlayerIndex - 当前玩家索引
-     * @param {Array} alivePlayers - 存活玩家列表（玩家索引）
-     * @param {Array} playerOrder - 玩家顺序（玩家ID列表）
-     */
     function isMyTurn(currentPlayerIndex, alivePlayers, playerOrder) {
-        if (!currentUser || !playerOrder) return false;
+        if (!currentUser || !Array.isArray(alivePlayers) || !Array.isArray(playerOrder)) {
+            return false;
+        }
 
-        const myIndex = playerOrder.indexOf(currentUser.id);
-        const currentPlayerId = playerOrder[alivePlayers[currentPlayerIndex]];
-
-        return currentUser.id === currentPlayerId;
+        const mySeatIndex = playerOrder.indexOf(currentUser.id);
+        const activeSeatIndex = alivePlayers[currentPlayerIndex];
+        return mySeatIndex !== -1 && activeSeatIndex === mySeatIndex;
     }
 
-    // 公共API
     return {
         createRoom,
         joinRoom,
